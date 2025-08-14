@@ -12,6 +12,10 @@ export function get(key: string): Promise<string | null> {
   return TurboPreferences.get(key);
 }
 
+export function getAll(): Promise<{ [key: string]: string } | null> {
+  return TurboPreferences.getAll();
+}
+
 export function set(key: string, value: string): void {
   TurboPreferences.set(key, value);
 }
@@ -22,4 +26,8 @@ export function clear(key: string): void {
 
 export function clearAll(): void {
   TurboPreferences.clearAll();
+}
+
+export function setMultiple(values: { key: string; value: string }[]): void {
+  TurboPreferences.setMultiple(values);
 }

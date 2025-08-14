@@ -5,7 +5,9 @@ export interface Spec extends TurboModule {
   multiply(a: number, b: number): number;
   setName(name: string): void;
   get(key: string): Promise<string | null>;
+  getAll(): Promise<{ [key: string]: string } | null>;
   set(key: string, value: string): void;
+  setMultiple(values: { key: string; value: string }[]): void;
   clear(key: string): void;
   clearAll(): void;
 }

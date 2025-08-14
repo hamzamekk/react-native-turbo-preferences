@@ -5,7 +5,14 @@ import {
   SafeAreaView,
   TextInput,
 } from 'react-native';
-import { get, set, clear, clearAll } from 'react-native-turbo-preferences';
+import {
+  get,
+  set,
+  clear,
+  clearAll,
+  getAll,
+  setMultiple,
+} from 'react-native-turbo-preferences';
 import { useState } from 'react';
 
 export default function App() {
@@ -13,7 +20,7 @@ export default function App() {
   const [newValue, setNewValue] = useState<string>('');
 
   const addValue = async () => {
-    await set('names', newValue);
+    await set(newValue, newValue);
     setNewValue('');
   };
 
@@ -32,6 +39,40 @@ export default function App() {
     setValue('');
   };
 
+  const getAllValue = async () => {
+    const value = await getAll();
+    setValue(JSON.stringify(value, null, 2));
+  };
+
+  const setMultipleValue = async () => {
+    console.log('Calling setMultiple...');
+    try {
+      const data = [
+        {
+          key: 'name',
+          value: 'johns',
+        },
+        {
+          key: 'age',
+          value: '21',
+        },
+        {
+          key: 'work',
+          value: 'developer',
+        },
+        {
+          key: 'city',
+          value: 'new york',
+        },
+      ];
+      console.log('Data to set:', data);
+      await setMultiple(data);
+      console.log('setMultiple completed successfully');
+    } catch (error) {
+      console.error('setMultiple error:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <TextInput
@@ -42,8 +83,10 @@ export default function App() {
       />
       <Button title="Add" onPress={addValue} />
       <Button title="Get" onPress={getValue} />
+      <Button title="Get All" onPress={getAllValue} />
       <Button title="Clear" onPress={clearValue} />
       <Button title="Clear All" onPress={clearAllValue} />
+      <Button title="Set Multiple" onPress={setMultipleValue} />
       <Text style={styles.text}>Value: {value}</Text>
     </SafeAreaView>
   );
