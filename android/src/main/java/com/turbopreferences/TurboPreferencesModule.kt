@@ -22,7 +22,6 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
 
   private var prefs_name = "default"
 
-  // Remove the single prefs object and create it dynamically
   private fun getPrefs(): SharedPreferences {
     return context.getSharedPreferences(prefs_name, Context.MODE_PRIVATE)
   }
@@ -33,7 +32,6 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
 
   override fun setName(name: String) {
     prefs_name = name
-    // Now when set/get are called, they'll use the new name
   }
 
   override fun set(key: String, value: String) {
@@ -42,9 +40,10 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
       val editor = prefs.edit()
       editor.putString(key, value)
       editor.apply()
+      // Log for debugging
+      android.util.Log.d("TurboPreferences", "Set key: $key = $value in preferences: $prefs_name")
     } catch (e: Exception) {
-      // set doesn't return a promise, so we can't reject
-      // Just log the error or handle it silently
+      android.util.Log.e("TurboPreferences", "Error setting key $key: ${e.message}")
     }
   }
 
@@ -52,9 +51,34 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     try {
       val prefs = getPrefs() // Get current preferences with current name
       val value = prefs.getString(key, null) 
+      // Log for debugging
+      android.util.Log.d("TurboPreferences", "Get key: $key = $value from preferences: $prefs_name")
       promise.resolve(value)
     } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error getting key $key: ${e.message}")
       promise.reject("E_GET_FAILED", e.message, e)
+    }
+  }
+
+  override fun clear(key: String) {
+     try {
+      val prefs = getPrefs() // Get current preferences with current name
+      prefs.edit().remove(key).apply()
+      // Log for debugging
+      android.util.Log.d("TurboPreferences", "Cleared key: $key from preferences: $prefs_name")
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error clearing key $key: ${e.message}")
+    }
+  }
+
+  override fun clearAll() {
+     try {
+      val prefs = getPrefs() // Get current preferences with current name
+      prefs.edit().clear().apply()
+      // Log for debugging
+      android.util.Log.d("TurboPreferences", "Cleared all preferences: $prefs_name")
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error clearing all preferences: ${e.message}")
     }
   }
 

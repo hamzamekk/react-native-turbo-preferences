@@ -6,6 +6,8 @@ export interface Spec extends TurboModule {
   setName(name: string): void;
   get(key: string): Promise<string | null>;
   set(key: string, value: string): void;
+  clear(key: string): void;
+  clearAll(): void;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');

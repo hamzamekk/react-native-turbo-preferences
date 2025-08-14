@@ -15,3 +15,11 @@ export function get(key: string): Promise<string | null> {
 export function set(key: string, value: string): void {
   TurboPreferences.set(key, value);
 }
+
+export function clear(key: string): void {
+  TurboPreferences.clear(key);
+}
+
+export function clearAll(): void {
+  TurboPreferences.clearAll();
+}

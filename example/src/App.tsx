@@ -1,58 +1,69 @@
-import { Text, View, StyleSheet, Button } from 'react-native';
-import { multiply, get, set, setName } from 'react-native-turbo-preferences';
+import {
+  Text,
+  StyleSheet,
+  Button,
+  SafeAreaView,
+  TextInput,
+} from 'react-native';
+import { get, set, clear, clearAll } from 'react-native-turbo-preferences';
 import { useState } from 'react';
 
-const result = multiply(3, 7);
-
 export default function App() {
-  const [value, setValue] = useState('');
-  const [value_default, setValue_default] = useState('');
+  const [value, setValue] = useState<string>('');
+  const [newValue, setNewValue] = useState<string>('');
+
+  const addValue = async () => {
+    await set('names', newValue);
+    setNewValue('');
+  };
+
+  const getValue = async () => {
+    const value = await get('names');
+    setValue(value || '');
+  };
+
+  const clearValue = async () => {
+    await clear('names');
+    setValue('');
+  };
+
+  const clearAllValue = async () => {
+    await clearAll();
+    setValue('');
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Result: {result}</Text>
+    <SafeAreaView style={styles.container}>
+      <TextInput
+        style={styles.textInput}
+        placeholder="Enter you name"
+        onChangeText={(text) => setNewValue(text)}
+        value={newValue}
+      />
+      <Button title="Add" onPress={addValue} />
+      <Button title="Get" onPress={getValue} />
+      <Button title="Clear" onPress={clearValue} />
+      <Button title="Clear All" onPress={clearAllValue} />
       <Text style={styles.text}>Value: {value}</Text>
-      <Text style={styles.text}>Value default: {value_default}</Text>
-
-      <Button title="set name default" onPress={() => setName('default')} />
-
-      <Button title="Set Value" onPress={() => set('username', 'John')} />
-      <Button
-        title="Get Value"
-        onPress={() => get('username').then((value) => setValue(value || ''))}
-      />
-
-      <View style={styles.separator} />
-      <Button
-        title="Set Name new default"
-        onPress={() => setName('new_default')}
-      />
-      <Button title="Set Name default" onPress={() => setName('default')} />
-      <Button
-        title="Get Value default"
-        onPress={() =>
-          get('username').then((value) => setValue_default(value || ''))
-        }
-      />
-      <Button
-        title="Set Value default"
-        onPress={() => set('username', 'John_default')}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: 'white',
   },
   separator: {
     height: 10,
   },
   text: {
+    color: 'black',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
     color: 'black',
   },
 });
