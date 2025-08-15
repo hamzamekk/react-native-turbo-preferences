@@ -2,15 +2,26 @@ import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
 export interface Spec extends TurboModule {
-  multiply(a: number, b: number): number;
+  // ----- Namespace / file selection -----
+  /**
+   * iOS: UserDefaults(suiteName)
+   * Android: getSharedPreferences(name, MODE_PRIVATE)
+   * Pass undefined/null to go back to the standard/default file.
+   */
   setName(name: string): void;
+
+  // ----- Single key ops -----
   get(key: string): Promise<string | null>;
-  getAll(): Promise<{ [key: string]: string } | null>;
   set(key: string, value: string): void;
-  setMultiple(values: { key: string; value: string }[]): void;
   clear(key: string): void;
-  clearAll(): void;
-  contains(key: string): Promise<boolean>;
+  contains(key: string): Promise<boolean>; // aka hasKey
+
+  // ----- Batch ops -----
+  setMultiple(values: { key: string; value: string }[]): void;
+
+  // ----- Whole-store ops -----
+  getAll(): Promise<{ [key: string]: string }>;
+  clearAll(): Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');

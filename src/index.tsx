@@ -1,9 +1,5 @@
 import TurboPreferences from './NativeTurboPreferences';
 
-export function multiply(a: number, b: number): number {
-  return TurboPreferences.multiply(a, b);
-}
-
 export function setName(name: string): void {
   TurboPreferences.setName(name);
 }
@@ -35,3 +31,5 @@ export function setMultiple(values: { key: string; value: string }[]): void {
 export function contains(key: string): Promise<boolean> {
   return TurboPreferences.contains(key);
 }
+
+export default TurboPreferences;
