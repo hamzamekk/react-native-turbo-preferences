@@ -21,7 +21,7 @@ export interface Spec extends TurboModule {
 
   // ----- Whole-store ops -----
   getAll(): Promise<{ [key: string]: string }>;
-  clearAll(): Promise<void>;
+  clearAll(): void;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');
