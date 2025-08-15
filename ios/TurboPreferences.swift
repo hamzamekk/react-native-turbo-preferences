@@ -39,7 +39,10 @@ class TurboPreferences: NSObject {
 
   @objc
   func set(_ key: String, value: String) {
-    defaults.set(value, forKey: key)
+    if value != "" {
+      defaults.set(value, forKey: key)
+    }
+    defaults.synchronize()
   }
   
   @objc
@@ -48,8 +51,11 @@ class TurboPreferences: NSObject {
       if let dict = item as? NSDictionary,
          let key = dict["key"] as? String,
          let value = dict["value"] as? String {
+        if value != "" {
         defaults.set(value, forKey: key)
+        }
       }
+      defaults.synchronize()
     }
   }
 

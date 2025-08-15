@@ -33,7 +33,7 @@ export default function App() {
 
   const clearValue = async () => {
     await clear('names');
-    setValue('');
+    // setValue('');
   };
 
   const clearAllValue = async () => {
