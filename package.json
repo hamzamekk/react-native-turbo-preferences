@@ -43,7 +43,11 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "preferences",
+    "sharedpreferences",
+    "userdefaults",
+    "turbo-module"
   ],
   "repository": {
     "type": "git",
@@ -157,7 +161,7 @@
     }
   },
   "create-react-native-library": {
-    "languages": "kotlin-objc",
+    "languages": "kotlin-swift",
     "type": "turbo-module",
     "version": "0.52.1"
   }

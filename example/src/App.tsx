@@ -20,7 +20,7 @@ export default function App() {
   const [newValue, setNewValue] = useState<string>('');
 
   const addValue = async () => {
-    await set(newValue, newValue);
+    await set('names', newValue);
     setNewValue('');
   };
 

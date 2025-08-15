@@ -1976,7 +1976,7 @@ SPEC CHECKSUMS:
   ReactCodegen: c63eda03ba1d94353fb97b031fc84f75a0d125ba
   ReactCommon: 76d2dc87136d0a667678668b86f0fca0c16fdeb0
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
-  TurboPreferences: 2d126397feb4039529be7b43c954bb09ea252dd5
+  TurboPreferences: 97395d45ce9632a3be5d88fae621b8b7684d1871
   Yoga: c758bfb934100bb4bf9cbaccb52557cee35e8bdf
 
 PODFILE CHECKSUM: cfd331def4c1ba15787def93d53610f8bfe9d757
