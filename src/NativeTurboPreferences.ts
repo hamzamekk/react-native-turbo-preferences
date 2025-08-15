@@ -10,6 +10,7 @@ export interface Spec extends TurboModule {
   setMultiple(values: { key: string; value: string }[]): void;
   clear(key: string): void;
   clearAll(): void;
+  contains(key: string): Promise<boolean>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');

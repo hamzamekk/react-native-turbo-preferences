@@ -122,6 +122,17 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  override fun contains(key: String, promise: Promise) {
+    try {
+      val prefs = getPrefs() // Get current preferences with current name
+      val containsKey = prefs.contains(key)
+      
+      promise.resolve(containsKey)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error checking if key contains: ${e.message}")
+    }
+  }
+
   companion object {
     const val NAME = "TurboPreferences"
   }

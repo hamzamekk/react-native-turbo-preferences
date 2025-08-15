@@ -10,6 +10,7 @@ RCT_EXTERN_METHOD(clear:(NSString *)key)
 RCT_EXTERN_METHOD(clearAll)
 RCT_EXTERN_METHOD(getAll:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(setMultiple:(NSArray *)values)
+RCT_EXTERN_METHOD(contains:(NSString *)key resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 + (BOOL)requiresMainQueueSetup
 {

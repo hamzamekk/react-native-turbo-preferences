@@ -31,3 +31,7 @@ export function clearAll(): void {
 export function setMultiple(values: { key: string; value: string }[]): void {
   TurboPreferences.setMultiple(values);
 }
+
+export function contains(key: string): Promise<boolean> {
+  return TurboPreferences.contains(key);
+}

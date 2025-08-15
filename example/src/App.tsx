@@ -13,6 +13,7 @@ import {
   getAll,
   setMultiple,
   setName,
+  contains,
 } from 'react-native-turbo-preferences';
 import { useState } from 'react';
 
@@ -73,6 +74,11 @@ export default function App() {
     }
   };
 
+  const containsValue = async () => {
+    const isContains = await contains('names');
+    console.log('containsValue', isContains);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <TextInput
@@ -87,6 +93,7 @@ export default function App() {
       <Button title="Clear" onPress={clearValue} />
       <Button title="Clear All" onPress={clearAllValue} />
       <Button title="Set Multiple" onPress={setMultipleValue} />
+      <Button title="Contains" onPress={containsValue} />
       <Text style={styles.text}>Value: {value}</Text>
     </SafeAreaView>
   );

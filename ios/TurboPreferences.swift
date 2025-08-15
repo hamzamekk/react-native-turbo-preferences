@@ -42,7 +42,6 @@ class TurboPreferences: NSObject {
     if value != "" {
       defaults.set(value, forKey: key)
     }
-    defaults.synchronize()
   }
   
   @objc
@@ -52,13 +51,17 @@ class TurboPreferences: NSObject {
          let key = dict["key"] as? String,
          let value = dict["value"] as? String {
         if value != "" {
-        defaults.set(value, forKey: key)
+          defaults.set(value, forKey: key)
         }
       }
-      defaults.synchronize()
     }
   }
 
+  @objc
+  func contains(_ key: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    let value = defaults.string(forKey: key) ?? ""
+    resolve(value != "")
+  }
 
   @objc
   func clear(_ key: String) {
@@ -71,7 +74,6 @@ class TurboPreferences: NSObject {
     for key in allKeys {
         defaults.removeObject(forKey: key)
     }
-    defaults.synchronize()
   }
 
   @objc
