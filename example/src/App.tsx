@@ -12,6 +12,7 @@ import {
   clearAll,
   getAll,
   setMultiple,
+  setName,
 } from 'react-native-turbo-preferences';
 import { useState } from 'react';
 
@@ -20,6 +21,7 @@ export default function App() {
   const [newValue, setNewValue] = useState<string>('');
 
   const addValue = async () => {
+    await setName('com.reactnative');
     await set('names', newValue);
     setNewValue('');
   };
@@ -40,8 +42,8 @@ export default function App() {
   };
 
   const getAllValue = async () => {
-    const value = await getAll();
-    setValue(JSON.stringify(value, null, 2));
+    const values = await getAll();
+    setValue(JSON.stringify(values, null, 2));
   };
 
   const setMultipleValue = async () => {
@@ -65,9 +67,7 @@ export default function App() {
           value: 'new york',
         },
       ];
-      console.log('Data to set:', data);
-      await setMultiple(data);
-      console.log('setMultiple completed successfully');
+      setMultiple(data);
     } catch (error) {
       console.error('setMultiple error:', error);
     }
