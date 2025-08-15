@@ -16,12 +16,6 @@ class TurboPreferences: NSObject {
       print("Error setting name")
     }
   }
-
-  @objc
-  func multiply(_ a: Double, b: Double, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-    let result = a * b
-    resolve(NSNumber(value: result))
-  }
   
   @objc
   func get(_ key: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {

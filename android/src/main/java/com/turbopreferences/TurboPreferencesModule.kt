@@ -31,10 +31,6 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     return context.getSharedPreferences(prefs_name, Context.MODE_PRIVATE)
   }
 
-  override fun multiply(a: Double, b: Double): Double {
-    return a * b
-  }
-
   override fun setName(name: String) {
     prefs_name = name
   }
