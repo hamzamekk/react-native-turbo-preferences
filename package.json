@@ -34,8 +34,12 @@
   "scripts": {
     "example": "yarn workspace react-native-turbo-preferences-example",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"**/*.{js,ts,tsx}\" --fix",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "prepare": "bob build",
     "release": "release-it --only-version"
@@ -85,6 +89,7 @@
     "react-native": "0.79.2",
     "react-native-builder-bob": "^0.40.8",
     "release-it": "^17.10.0",
+    "ts-jest": "^29.1.1",
     "turbo": "^1.10.7",
     "typescript": "^5.8.3"
   },
