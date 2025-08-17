@@ -1,6 +1,6 @@
 {
   "name": "react-native-turbo-preferences",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Modern TurboModule wrapper for iOS NSUserDefaults and Android SharedPreferences.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
