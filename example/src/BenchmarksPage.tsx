@@ -35,9 +35,13 @@ export default function BenchmarksPage({ onBack }: Props) {
     const duration = performance.now() - start;
     const throughput = count / (duration / 1000); // operations per second
 
+    // Handle sub-millisecond operations properly
+    const roundedDuration =
+      duration < 1 ? Math.round(duration * 1000) / 1000 : Math.round(duration);
+
     return {
       operation,
-      duration: Math.round(duration),
+      duration: roundedDuration,
       count,
       throughput: Math.round(throughput),
     };
@@ -171,7 +175,10 @@ export default function BenchmarksPage({ onBack }: Props) {
                 <Text style={styles.resultOperation}>{result.operation}</Text>
                 <View style={styles.resultDetails}>
                   <Text style={styles.resultDetail}>
-                    ⏱️ {result.duration}ms
+                    ⏱️{' '}
+                    {result.duration < 1
+                      ? `${(result.duration * 1000).toFixed(1)}μs`
+                      : `${result.duration}ms`}
                   </Text>
                   <Text style={styles.resultDetail}>
                     📈 {result.throughput} ops/sec
@@ -215,10 +222,31 @@ export default function BenchmarksPage({ onBack }: Props) {
           </View>
 
           <View style={styles.platformSection}>
-            <Text style={styles.platformTitle}>🍎 iOS (Coming Soon)</Text>
-            <Text style={styles.comingSoon}>
-              Benchmarks will be added after testing on real iOS devices
-            </Text>
+            <Text style={styles.platformTitle}>🍎 iOS (iPhone SE, iOS 18)</Text>
+            <View style={styles.benchmarkItem}>
+              <Text style={styles.benchmarkOperation}>Single Set (100)</Text>
+              <Text style={styles.benchmarkValue}>32ms • 3,117 ops/sec</Text>
+            </View>
+            <View style={styles.benchmarkItem}>
+              <Text style={styles.benchmarkOperation}>Single Get (100)</Text>
+              <Text style={styles.benchmarkValue}>78ms • 1,277 ops/sec</Text>
+            </View>
+            <View style={styles.benchmarkItem}>
+              <Text style={styles.benchmarkOperation}>Batch Set (100)</Text>
+              <Text style={styles.benchmarkValue}>
+                ~0.1ms • 331,950 ops/sec
+              </Text>
+            </View>
+            <View style={styles.benchmarkItem}>
+              <Text style={styles.benchmarkOperation}>Batch Get (100)</Text>
+              <Text style={styles.benchmarkValue}>85ms • 1,172 ops/sec</Text>
+            </View>
+            <View style={styles.benchmarkItem}>
+              <Text style={styles.benchmarkOperation}>
+                Namespace Switch (50)
+              </Text>
+              <Text style={styles.benchmarkValue}>2ms • 33,123 ops/sec</Text>
+            </View>
           </View>
         </View>
 
