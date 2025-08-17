@@ -22,35 +22,42 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     return NAME
   }
 
-  // Example method
-  // See https://reactnative.dev/docs/native-modules-android
-
   private var prefs_name = "default"
 
   private fun getPrefs(): SharedPreferences {
     return context.getSharedPreferences(prefs_name, Context.MODE_PRIVATE)
   }
 
-  override fun setName(name: String) {
-    prefs_name = name
-  }
-
-  override fun set(key: String, value: String) {
+  override fun setName(name: String, promise: Promise) {
     try {
-      if (key != "") {
-      val prefs = getPrefs() // Get current preferences with current name
-      val editor = prefs.edit()
-      editor.putString(key, value)
-      editor.apply()
-      }
+      prefs_name = name
+      promise.resolve(null)
     } catch (e: Exception) {
-      android.util.Log.e("TurboPreferences", "Error setting key $key: ${e.message}")
+      android.util.Log.e("TurboPreferences", "Error setting name: ${e.message}")
+      promise.reject("E_SET_NAME_FAILED", e.message, e)
     }
   }
 
-  override fun setMultiple(values: ReadableArray) {
+  override fun set(key: String, value: String, promise: Promise) {
     try {
-      val prefs = getPrefs() // Get current preferences with current name
+      if (key != "") {
+        val prefs = getPrefs()
+        val editor = prefs.edit()
+        editor.putString(key, value)
+        editor.apply()
+        promise.resolve(null)
+      } else {
+        promise.reject("E_INVALID_KEY", "Key cannot be empty")
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error setting key $key: ${e.message}")
+      promise.reject("E_SET_FAILED", e.message, e)
+    }
+  }
+
+  override fun setMultiple(values: ReadableArray, promise: Promise) {
+    try {
+      val prefs = getPrefs()
       val editor = prefs.edit()
 
       for (i in 0 until values.size()) {
@@ -60,19 +67,21 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
           val value = item.getString("value") ?: ""
 
           if(key != ""){
-          editor.putString(key, value)
+            editor.putString(key, value)
           }
         }
       }
       editor.apply()
+      promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error setting multiple keys: ${e.message}")
+      promise.reject("E_SET_MULTIPLE_FAILED", e.message, e)
     }
   }
 
   override fun getMultiple(keys: ReadableArray, promise: Promise) {
     try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       val result: WritableMap = Arguments.createMap()
       
       for (i in 0 until keys.size()) {
@@ -90,9 +99,9 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  override fun clearMultiple(keys: ReadableArray) {
+  override fun clearMultiple(keys: ReadableArray, promise: Promise) {
     try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       val editor = prefs.edit()
       
       for (i in 0 until keys.size()) {
@@ -102,16 +111,17 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
         }
       }
       editor.apply()
+      promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error clearing multiple keys: ${e.message}")
+      promise.reject("E_CLEAR_MULTIPLE_FAILED", e.message, e)
     }
   }
 
   override fun get(key: String, promise: Promise) {
     try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       val value = prefs.getString(key, null) 
-      // Log for debugging
       promise.resolve(value)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error getting key $key: ${e.message}")
@@ -121,10 +131,9 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
 
   override fun getAll(promise: Promise) {
      try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       val allPrefs = prefs.all
       
-      // Create a WritableMap for proper TurboModule compatibility
       val writableMap: WritableMap = Arguments.createMap()
       for ((key, value) in allPrefs) {
         writableMap.putString(key.toString(), value.toString())
@@ -137,32 +146,37 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  override fun clear(key: String) {
+  override fun clear(key: String, promise: Promise) {
      try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       prefs.edit().remove(key).apply()
+      promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error clearing key $key: ${e.message}")
+      promise.reject("E_CLEAR_FAILED", e.message, e)
     }
   }
 
-  override fun clearAll() {
+  override fun clearAll(promise: Promise) {
      try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       prefs.edit().clear().apply()
+      promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error clearing all preferences: ${e.message}")
+      promise.reject("E_CLEAR_ALL_FAILED", e.message, e)
     }
   }
 
   override fun contains(key: String, promise: Promise) {
     try {
-      val prefs = getPrefs() // Get current preferences with current name
+      val prefs = getPrefs()
       val containsKey = prefs.contains(key)
       
       promise.resolve(containsKey)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error checking if key contains: ${e.message}")
+      promise.reject("E_CONTAINS_FAILED", e.message, e)
     }
   }
 
