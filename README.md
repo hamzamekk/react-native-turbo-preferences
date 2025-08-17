@@ -1,116 +1,173 @@
-# react-native-turbo-preferences
+react-native-turbo-preferences
 
-⚡ A fast, cross-platform TurboModule for app preferences and key-value storage, using `NSUserDefaults` on iOS and `SharedPreferences` on Android.
+⚡ A fast, cross-platform TurboModule for app preferences and key-value storage, using NSUserDefaults on iOS and SharedPreferences on Android.
 
-[![npm version](https://img.shields.io/npm/v/react-native-turbo-preferences)](https://www.npmjs.com/package/react-native-turbo-preferences)
-![platforms](https://img.shields.io/badge/platforms-ios%20%7C%20android-lightgrey)
-![turbomodule](https://img.shields.io/badge/new%20architecture-ready-brightgreen)
+✨ Features
 
-## Features
+🚀 New Architecture ready — implemented as a TurboModule
 
-- 🚀 **New Architecture ready** — implemented as a TurboModule
-- 📱 **Cross-platform** — same JS API for iOS + Android
-- 📦 **Lightweight** — wraps native APIs (`NSUserDefaults`, `SharedPreferences`)
-- 🗂 **Namespace support** — switch between default store and named suite/file
-- 🛠 **Batch operations** — set/get/remove multiple keys at once
-- 🧹 **Full control** — get all keys, clear store, check existence
+📱 Cross-platform — same JS API for iOS + Android
 
-## Installation
+📦 Lightweight — wraps native APIs (NSUserDefaults, SharedPreferences)
 
-```bash
+🗂 Namespace support — switch between default store and named suite/file
+
+🛠 Batch operations — set/get/remove multiple keys at once
+
+🧹 Full control — get all keys, clear store, check existence
+
+📦 Installation
 npm install react-native-turbo-preferences
+
 # or
+
 yarn add react-native-turbo-preferences
-```
 
-If you’re in a bare React Native app, rebuild the app after installing:
+If you’re in a bare React Native app, rebuild after installing:
 
-```bash
 npx pod-install
-```
 
-For Expo, this package works with EAS builds (config plugin included).
+For Expo, this package works with EAS builds (includes a config plugin).
 
-## API
+🚨 Security Notice
 
-### `setName(name?: string | null): Promise<void>`
+This library stores values in NSUserDefaults (iOS) and SharedPreferences (Android), which are not secure.
+Do not store sensitive data (passwords, tokens, credit card info).
+
+For secure storage, use:
+
+iOS: Keychain (react-native-keychain, expo-secure-store)
+
+Android: EncryptedSharedPreferences (react-native-encrypted-storage)
+
+📚 API
+Quick Reference Table
+Method Description Parameters Returns
+setName(name?: string | null) Switches storage namespace name (string or null) Promise<void>
+get(key: string) Retrieves a value key (string) Promise<string | null>
+set(key: string, value: string) Stores a value key (string), value (string) Promise<void>
+remove(key: string) Deletes a value key (string) Promise<void>
+contains(key: string) Checks if key exists key (string) Promise<boolean>
+setMultiple(values: Record<string, string>) Stores multiple keys values (object) Promise<void>
+getMultiple(keys: string[]) Retrieves multiple keys keys (array) Promise<Record<string, string | null>>
+removeMultiple(keys: string[]) Deletes multiple keys keys (array) Promise<void>
+getAll() Retrieves all key-value pairs None Promise<Record<string, string>>
+clearAll() Clears all keys None Promise<void>
+Detailed Methods
+setName(name?: string | null): Promise<void>
 
 Switches the storage namespace.
 
-- iOS: calls `UserDefaults(suiteName:)`
-- Android: calls `getSharedPreferences(name, MODE_PRIVATE)`
+iOS: uses UserDefaults(suiteName:)
 
-### `get(key: string): Promise<string | null>`
+Android: uses getSharedPreferences(name, MODE_PRIVATE)
 
-Returns the value for a key, or `null` if missing.
+Pass null/undefined to reset to default store.
 
-### `set(key: string, value: string): Promise<void>`
+get(key: string): Promise<string | null>
+
+Returns the value for a key, or null if missing.
+
+set(key: string, value: string): Promise<void>
 
 Stores a string value.
 
-### `remove(key: string): Promise<void>`
+remove(key: string): Promise<void>
 
 Deletes a key.
 
-### `contains(key: string): Promise<boolean>`
+contains(key: string): Promise<boolean>
 
 Checks if the key exists.
 
-### `setMultiple(values: { [key: string]: string }): Promise<void>`
+setMultiple(values: { [key: string]: string }): Promise<void>
 
 Sets multiple keys at once.
 
-### `getMultiple(keys: string[]): Promise<{ [key: string]: string | null }>`
+getMultiple(keys: string[]): Promise<{ [key: string]: string | null }>
 
 Retrieves multiple keys at once.
 
-### `removeMultiple(keys: string[]): Promise<void>`
+removeMultiple(keys: string[]): Promise<void>
 
 Removes multiple keys at once.
 
-### `getAll(): Promise<{ [key: string]: string }>`
+getAll(): Promise<{ [key: string]: string }>
 
-Returns all keys/values in the current store.
+Returns all keys/values in the current store. Always returns an object — {} if empty.
 
-### `clearAll(): Promise<void>`
+clearAll(): Promise<void>
 
 Clears the current store.
 
-## Usage
-
-```ts
+💻 Usage
 import Prefs from 'react-native-turbo-preferences';
 
 async function demo() {
-  await Prefs.setName('MyPrefs');
-  await Prefs.set('username', 'Hamza');
-  const username = await Prefs.get('username');
-  console.log(username); // "Hamza"
+// Use a named store
+await Prefs.setName('MyPrefs');
 
-  const exists = await Prefs.contains('username');
-  console.log('Contains username?', exists);
+// Set a value
+await Prefs.set('username', 'Hamza');
 
-  await Prefs.clearAll();
+// Get a value
+const username = await Prefs.get('username');
+console.log(username); // "Hamza"
+
+// Check if a key exists
+const exists = await Prefs.contains('username');
+console.log('Contains username?', exists);
+
+// Set multiple keys
+await Prefs.setMultiple({ theme: 'dark', lang: 'en' });
+
+// Get all keys
+const all = await Prefs.getAll();
+console.log(all);
+
+// Clear everything
+await Prefs.clearAll();
 }
-```
 
-## Platform Notes
+🛠 Example App
 
-```md
+A full interactive playground is in example/App.tsx.
+
+Run it locally:
+
+cd example
+yarn install
+yarn start
+
+📌 Platform Notes
 iOS
 
-- Values are stored using `NSUserDefaults`.
-- Use an **App Group ID** in `setName` to share data with extensions or widgets.
-- Supports property list types (`String`, `Number`, `Bool`, `Date`, `Data`, arrays, and dictionaries).  
-  This library only exposes **string** values to keep the API simple.
+Values stored in NSUserDefaults.
+
+Use an App Group ID in setName to share data with extensions/widgets.
+
+Only property list types are supported natively, but this API exposes string values for consistency.
 
 Android
 
-- Values are stored using `SharedPreferences`.
-- `setName` switches to a different preferences file.
-- Also supports primitive types natively, but this API only exposes strings.
-```
+Values stored in SharedPreferences.
 
-## License
+setName changes the XML file used for storage.
 
-MIT © [Hamza El Mekkoudi]
+Only string values are exposed through this API.
+
+🧑‍💻 Contributing
+
+Pull requests are welcome!
+
+Fork the repo
+
+Create a new branch: git checkout -b feature/your-feature
+
+Commit changes & push
+
+Open a PR on GitHub
+
+📄 License
+
+MIT © 2025 hamzamekk

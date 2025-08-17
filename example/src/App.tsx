@@ -111,6 +111,7 @@ export default function App() {
     useState<string>('(default)');
   const [keyName, setKeyName] = useState('username');
   const [keyValue, setKeyValue] = useState('Hamza');
+  const [multipleKeys, setMultipleKeys] = useState('theme,lang,username');
 
   const [all, setAll] = useState<Record<string, string>>({});
   const kv = usePreference(keyName);
@@ -167,10 +168,38 @@ export default function App() {
     await refreshAll();
   }, [refreshAll]);
 
-  // const doRemoveMultiple = useCallback(async () => {
-  //   await Prefs.removeMultiple(['theme', 'lang', 'pace']);
-  //   await refreshAll();
-  // }, [refreshAll]);
+  const doGetMultiple = useCallback(async () => {
+    const keys = multipleKeys
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => k);
+    if (keys.length === 0) return Alert.alert('Keys required');
+
+    try {
+      // Note: This will fail until you implement getMultiple in the native module
+      const values = await Prefs.getMultiple(keys);
+      Alert.alert('Get Multiple Result', JSON.stringify(values, null, 2));
+    } catch (error) {
+      Alert.alert('Error', `getMultiple not implemented yet: ${error}`);
+    }
+  }, [multipleKeys]);
+
+  const doRemoveMultiple = useCallback(async () => {
+    const keys = multipleKeys
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => k);
+    if (keys.length === 0) return Alert.alert('Keys required');
+
+    try {
+      // Note: This will fail until you implement clearMultiple in the native module
+      await Prefs.clearMultiple(keys);
+      await refreshAll();
+      Alert.alert('Success', `Removed keys: ${keys.join(', ')}`);
+    } catch (error) {
+      Alert.alert('Error', `clearMultiple not implemented yet: ${error}`);
+    }
+  }, [multipleKeys, refreshAll]);
 
   const doClearAll = useCallback(async () => {
     await Prefs.clearAll();
@@ -243,14 +272,23 @@ export default function App() {
 
         {/* Batch ops */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Batch</Text>
+          <Text style={styles.sectionTitle}>Batch Operations</Text>
+          <Field
+            label="Keys (comma-separated)"
+            value={multipleKeys}
+            onChangeText={setMultipleKeys}
+            placeholder="theme,lang,username"
+          />
           <View style={styles.row}>
             <Button
               title="Set Multiple (theme/lang/pace)"
               onPress={doBatchSet}
             />
-            {/* <View style={{ width: 12 }} />
-          <Button title="Remove Multiple" onPress={doRemoveMultiple} /> */}
+            <View style={{ width: 12 }} />
+            <Button title="Get Multiple" onPress={doGetMultiple} />
+          </View>
+          <View style={styles.row}>
+            <Button title="Remove Multiple" onPress={doRemoveMultiple} />
           </View>
         </View>
 

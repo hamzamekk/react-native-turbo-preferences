@@ -8,20 +8,22 @@ export interface Spec extends TurboModule {
    * Android: getSharedPreferences(name, MODE_PRIVATE)
    * Pass undefined/null to go back to the standard/default file.
    */
-  setName(name: string): void;
+  setName(name: string): Promise<void>;
 
   // ----- Single key ops -----
   get(key: string): Promise<string | null>;
-  set(key: string, value: string): void;
-  clear(key: string): void;
+  set(key: string, value: string): Promise<void>;
+  clear(key: string): Promise<void>;
   contains(key: string): Promise<boolean>; // aka hasKey
 
   // ----- Batch ops -----
-  setMultiple(values: { key: string; value: string }[]): void;
+  setMultiple(values: { key: string; value: string }[]): Promise<void>;
+  getMultiple(keys: string[]): Promise<{ [key: string]: string | null }>;
+  clearMultiple(keys: string[]): Promise<void>;
 
   // ----- Whole-store ops -----
   getAll(): Promise<{ [key: string]: string }>;
-  clearAll(): void;
+  clearAll(): Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');
