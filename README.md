@@ -511,25 +511,6 @@ yarn lint
 yarn lint:fix
 ```
 
-## 📝 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
-
-### Recent Updates
-
-**v0.2.2** - 2025-01-15
-
-- ✨ Added `getMultiple` and `clearMultiple` methods
-- 🐛 Fixed namespace switching issues
-- 🔧 Improved error handling
-- 📚 Updated documentation
-
-**v0.2.0** - 2025-01-01
-
-- 🚀 New Architecture (TurboModule) support
-- ✨ Added batch operations
-- 📱 Enhanced cross-platform compatibility
-
 ## ❓ FAQ
 
 <details>
