@@ -425,13 +425,13 @@ yarn test --coverage
 
 ## 📊 Performance
 
-| Operation        | iOS    | Android | Notes                   |
+| Operation        | iOS    | Android | iOS Ops/sec             | Android Ops/sec           |
 | ---------------- | ------ | ------- | ----------------------- | ------------------------- |
-| Single Set (100) | 32ms   | 232ms   | 3,117 ops/sec           | 431 ops/sec               |
-| Single Get (100) | 78ms   | 100ms   | 1,277 ops/sec           | 995 ops/sec               |
-| Batch Set (100)  | ~0.1ms | 9ms     | 331,950 ops/sec         | 11,700 ops/sec            |
-| Batch Get (100)  | 85ms   | 6ms     | 1,172 ops/sec           | 18,000 ops/sec            |
-| Namespace Switch | 2ms    | 77ms    | 33,123 ops/sec          | 646 ops/sec               |
+| Single Set (100) | 32ms   | 232ms   | 3,117                   | 431                       |
+| Single Get (100) | 78ms   | 100ms   | 1,277                   | 995                       |
+| Batch Set (100)  | ~0.1ms | 9ms     | 331,950                 | 11,700                    |
+| Batch Get (100)  | 85ms   | 6ms     | 1,172                   | 18,000                    |
+| Namespace Switch | 2ms    | 77ms    | 33,123                  | 646                       |
 | Memory overhead  | ~4B    | ~12KB   | **0.04B per operation** | **0.12 KB per operation** |
 
 > **Note:** All benchmarks from real device testing. iOS shows superior performance in most operations with ultra-low memory footprint.
