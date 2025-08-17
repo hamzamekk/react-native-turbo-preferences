@@ -70,6 +70,43 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  override fun getMultiple(keys: ReadableArray, promise: Promise) {
+    try {
+      val prefs = getPrefs() // Get current preferences with current name
+      val result: WritableMap = Arguments.createMap()
+      
+      for (i in 0 until keys.size()) {
+        val key = keys.getString(i)
+        if (key != null) {
+          val value = prefs.getString(key, null)
+          result.putString(key, value)
+        }
+      }
+      
+      promise.resolve(result)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error getting multiple keys: ${e.message}")
+      promise.reject("E_GET_MULTIPLE_FAILED", e.message, e)
+    }
+  }
+
+  override fun clearMultiple(keys: ReadableArray) {
+    try {
+      val prefs = getPrefs() // Get current preferences with current name
+      val editor = prefs.edit()
+      
+      for (i in 0 until keys.size()) {
+        val key = keys.getString(i)
+        if (key != null) {
+          editor.remove(key)
+        }
+      }
+      editor.apply()
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error clearing multiple keys: ${e.message}")
+    }
+  }
+
   override fun get(key: String, promise: Promise) {
     try {
       val prefs = getPrefs() // Get current preferences with current name

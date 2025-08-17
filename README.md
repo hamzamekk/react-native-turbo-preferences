@@ -50,7 +50,7 @@ remove(key: string) Deletes a value key (string) Promise<void>
 contains(key: string) Checks if key exists key (string) Promise<boolean>
 setMultiple(values: Record<string, string>) Stores multiple keys values (object) Promise<void>
 getMultiple(keys: string[]) Retrieves multiple keys keys (array) Promise<Record<string, string | null>>
-removeMultiple(keys: string[]) Deletes multiple keys keys (array) Promise<void>
+clearMultiple(keys: string[]) Deletes multiple keys keys (array) Promise<void>
 getAll() Retrieves all key-value pairs None Promise<Record<string, string>>
 clearAll() Clears all keys None Promise<void>
 Detailed Methods
@@ -88,7 +88,7 @@ getMultiple(keys: string[]): Promise<{ [key: string]: string | null }>
 
 Retrieves multiple keys at once.
 
-removeMultiple(keys: string[]): Promise<void>
+clearMultiple(keys: string[]): Promise<void>
 
 Removes multiple keys at once.
 
