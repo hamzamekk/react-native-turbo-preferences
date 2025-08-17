@@ -502,10 +502,10 @@ yarn example       # Run example app
 - [x] ✅ Batch operations
 - [x] ✅ Namespace support
 - [x] ✅ TypeScript definitions
+- [x] ✅ Performance monitoring & benchmarking
+- [x] ✅ Memory footprint analysis
 - [ ] 🔄 React hooks (In Progress)
-- [ ] 📅 Encryption support
-- [ ] 📅 Migration utilities
-- [ ] 📅 Performance monitoring
+- [ ] 📅 iOS benchmarks
 
 ## 🤝 Contributing
 
