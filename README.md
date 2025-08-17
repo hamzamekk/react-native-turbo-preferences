@@ -560,19 +560,6 @@ Yes! This package is production-ready and follows React Native best practices. M
 </details>
 
 <details>
-<summary><strong>How do I migrate from react-native-async-storage?</strong></summary>
-
-The API is similar but not identical. Key differences:
-
-- All methods are async (return Promises)
-- Use `clear()` instead of `remove()`
-- Namespace support with `setName()`
-- Batch operations available
-
-See our [Migration Guide](MIGRATION.md) for detailed instructions.
-
-</details>
-
 <details>
 <summary><strong>Why TurboModule instead of regular Native Module?</strong></summary>
 
@@ -584,12 +571,6 @@ TurboModules provide:
 - Future-proof architecture
 - Better integration with React Native's evolving ecosystem
 </details>
-
-## 🔗 Related Projects
-
-- [react-native-async-storage](https://github.com/react-native-async-storage/async-storage) - Alternative storage solution
-- [react-native-keychain](https://github.com/oblador/react-native-keychain) - Secure storage for sensitive data
-- [expo-secure-store](https://docs.expo.dev/versions/latest/sdk/securestore/) - Secure storage for Expo apps
 
 ## 📄 License
 
