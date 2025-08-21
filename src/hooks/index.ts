@@ -1,0 +1,1 @@
+export { usePreferenceString } from './usePreferenceString';

@@ -44,4 +44,7 @@ export function contains(key: string): Promise<boolean> {
   return TurboPreferences.contains(key);
 }
 
+// Export hooks
+export * from './hooks';
+
 export default TurboPreferences;

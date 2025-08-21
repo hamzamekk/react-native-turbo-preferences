@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 
-import Prefs from 'react-native-turbo-preferences';
+import Prefs, { usePreferenceString } from 'react-native-turbo-preferences';
 
 const Button = ({
   title,
@@ -123,6 +123,10 @@ export default function App() {
     operations: number;
   } | null>(null);
   const kv = usePreference(keyName);
+
+  // Demo: New hook API
+  const [demoValue, setDemoValue, demoContains, clearDemo] =
+    usePreferenceString('demo_key');
 
   const refreshAll = useCallback(async () => {
     const obj = await Prefs.getAll();
@@ -385,6 +389,28 @@ export default function App() {
             <View style={{ width: 12 }} />
             <Button title="Reset to Default" onPress={resetNamespace} />
           </View>
+        </View>
+
+        {/* New Hook Demo */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>🪝 New Hook Demo</Text>
+          <Text style={styles.caption}>
+            const [value, setValue, contains, clear] =
+            usePreferenceString('demo_key')
+          </Text>
+          <View style={styles.row}>
+            <Button
+              title="Set Demo"
+              onPress={() => setDemoValue('Hello from hook!')}
+            />
+            <View style={{ width: 8 }} />
+            <Button title="Clear Demo" onPress={clearDemo} />
+          </View>
+          <Text style={styles.caption}>
+            Value: <Text style={styles.mono}>{demoValue ?? 'null'}</Text> |
+            Contains:{' '}
+            <Text style={styles.mono}>{demoContains ? 'true' : 'false'}</Text>
+          </Text>
         </View>
 
         {/* Single key operations */}
