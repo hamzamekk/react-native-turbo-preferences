@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/react-native-turbo-preferences.svg)](https://badge.fury.io/js/react-native-turbo-preferences)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/hamzamekk/react-native-turbo-preferences/workflows/CI/badge.svg)](https://github.com/hamzamekk/react-native-turbo-preferences/actions)
-[![React Native](https://img.shields.io/badge/React%20Native-0.79+-blue.svg)](https://reactnative.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.75+-blue.svg)](https://reactnative.dev/)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://reactnative.dev/)
 
 > ⚡ A fast, cross-platform TurboModule for app preferences and key-value storage, using NSUserDefaults on iOS and SharedPreferences on Android. Built for React Native's New Architecture.
@@ -11,6 +11,7 @@
 ## 🌟 Features
 
 - 🚀 **New Architecture Ready** — Implemented as a TurboModule for maximum performance
+- 🪝 **React Hooks** — Convenient hooks for reactive state management
 - 📱 **Cross-Platform** — Same JS API for iOS + Android with native optimizations
 - 📦 **Lightweight** — Wraps native APIs (NSUserDefaults, SharedPreferences) directly
 - 🗂 **Namespace Support** — Switch between default store and named suite/file
@@ -46,6 +47,8 @@ This package works with EAS builds.
 
 ## 🚀 Quick Start
 
+### Imperative API
+
 ```typescript
 import Prefs from 'react-native-turbo-preferences';
 
@@ -57,6 +60,31 @@ console.log(username); // "Hamza"
 // Use a named store
 await Prefs.setName('MyPrefs');
 await Prefs.set('theme', 'dark');
+```
+
+### React Hooks API
+
+```typescript
+import { usePreferenceString, usePreferenceNamespace } from 'react-native-turbo-preferences';
+
+function UserProfile() {
+  const [username, setUsername, hasUsername, clearUsername] = usePreferenceString('username');
+  const [namespace, setNamespace, resetToDefault] = usePreferenceNamespace();
+
+  return (
+    <View>
+      <Text>Username: {username || 'Not set'}</Text>
+      <Button
+        title="Set Username"
+        onPress={() => setUsername('Hamza')}
+      />
+      <Button
+        title="Clear Username"
+        onPress={clearUsername}
+      />
+    </View>
+  );
+}
 ```
 
 ## 📖 API Documentation
@@ -236,9 +264,286 @@ Clears the current store.
 await Prefs.clearAll(); // ⚠️ Use with caution!
 ```
 
+## 🪝 React Hooks API
+
+The library provides convenient React hooks for reactive state management with automatic updates and type safety.
+
+### `usePreferenceString(key: string)`
+
+Hook for managing string preferences with reactive updates.
+
+**Parameters:**
+
+- `key` (string) - The preference key
+
+**Returns:** `[value, setValue, contains, clear]`
+
+- `value` (string | null) - Current value
+- `setValue` (function) - `(value: string) => Promise<void>`
+- `contains` (boolean) - Whether the key exists
+- `clear` (function) - `() => Promise<void>`
+
+**Example:**
+
+```typescript
+import { usePreferenceString } from 'react-native-turbo-preferences';
+
+function UserSettings() {
+  const [username, setUsername, hasUsername, clearUsername] = usePreferenceString('username');
+
+  return (
+    <View>
+      <Text>Username: {username || 'Not set'}</Text>
+      <Text>Has username: {hasUsername ? 'Yes' : 'No'}</Text>
+      <Button title="Set" onPress={() => setUsername('John')} />
+      <Button title="Clear" onPress={clearUsername} />
+    </View>
+  );
+}
+```
+
+### `usePreferenceNumber(key: string)`
+
+Hook for managing numeric preferences with automatic type conversion.
+
+**Parameters:**
+
+- `key` (string) - The preference key
+
+**Returns:** `[value, setValue, contains, clear]`
+
+- `value` (number | null) - Current numeric value
+- `setValue` (function) - `(value: number) => Promise<void>`
+- `contains` (boolean) - Whether the key exists
+- `clear` (function) - `() => Promise<void>`
+
+**Example:**
+
+```typescript
+import { usePreferenceNumber } from 'react-native-turbo-preferences';
+
+function CounterSettings() {
+  const [count, setCount, hasCount, clearCount] = usePreferenceNumber('count');
+
+  return (
+    <View>
+      <Text>Count: {count ?? 0}</Text>
+      <Button title="Increment" onPress={() => setCount((count ?? 0) + 1)} />
+      <Button title="Reset" onPress={clearCount} />
+    </View>
+  );
+}
+```
+
+### `usePreferenceBoolean(key: string)`
+
+Hook for managing boolean preferences with automatic type conversion.
+
+**Parameters:**
+
+- `key` (string) - The preference key
+
+**Returns:** `[value, setValue, contains, clear]`
+
+- `value` (boolean | null) - Current boolean value
+- `setValue` (function) - `(value: boolean) => Promise<void>`
+- `contains` (boolean) - Whether the key exists
+- `clear` (function) - `() => Promise<void>`
+
+**Example:**
+
+```typescript
+import { usePreferenceBoolean } from 'react-native-turbo-preferences';
+
+function NotificationSettings() {
+  const [notifications, setNotifications, hasNotifications, clearNotifications] =
+    usePreferenceBoolean('notifications');
+
+  return (
+    <View>
+      <Text>Notifications: {notifications ? 'Enabled' : 'Disabled'}</Text>
+      <Switch
+        value={notifications ?? false}
+        onValueChange={setNotifications}
+      />
+      <Button title="Reset" onPress={clearNotifications} />
+    </View>
+  );
+}
+```
+
+### `usePreferenceObject<T>(key: string)`
+
+Hook for managing object preferences with automatic JSON serialization.
+
+**Parameters:**
+
+- `key` (string) - The preference key
+- `T` (generic) - TypeScript type for the object
+
+**Returns:** `[value, setValue, contains, clear]`
+
+- `value` (T | null) - Current object value
+- `setValue` (function) - `(value: T) => Promise<void>`
+- `contains` (boolean) - Whether the key exists
+- `clear` (function) - `() => Promise<void>`
+
+**Example:**
+
+```typescript
+import { usePreferenceObject } from 'react-native-turbo-preferences';
+
+interface UserProfile {
+  name: string;
+  age: number;
+  email: string;
+}
+
+function ProfileSettings() {
+  const [profile, setProfile, hasProfile, clearProfile] =
+    usePreferenceObject<UserProfile>('userProfile');
+
+  const updateProfile = () => {
+    setProfile({
+      name: 'John Doe',
+      age: 30,
+      email: 'john@example.com'
+    });
+  };
+
+  return (
+    <View>
+      <Text>Name: {profile?.name || 'Not set'}</Text>
+      <Text>Age: {profile?.age || 'Not set'}</Text>
+      <Text>Email: {profile?.email || 'Not set'}</Text>
+      <Button title="Update Profile" onPress={updateProfile} />
+      <Button title="Clear Profile" onPress={clearProfile} />
+    </View>
+  );
+}
+```
+
+### `usePreferenceNamespace()`
+
+Hook for managing preference namespaces with reactive updates.
+
+**Returns:** `[currentNamespace, setNamespace, resetToDefault]`
+
+- `currentNamespace` (string) - Current namespace name
+- `setNamespace` (function) - `(namespace: string) => Promise<void>`
+- `resetToDefault` (function) - `() => Promise<void>`
+
+**Example:**
+
+```typescript
+import { usePreferenceNamespace } from 'react-native-turbo-preferences';
+
+function NamespaceManager() {
+  const [namespace, setNamespace, resetToDefault] = usePreferenceNamespace();
+
+  return (
+    <View>
+      <Text>Current namespace: {namespace || 'Default'}</Text>
+      <Button title="User Settings" onPress={() => setNamespace('user_settings')} />
+      <Button title="App Config" onPress={() => setNamespace('app_config')} />
+      <Button title="Reset to Default" onPress={resetToDefault} />
+    </View>
+  );
+}
+```
+
+### Hook Features
+
+- **🔄 Reactive Updates** - Values automatically update when changed
+- **⚡ Automatic Loading** - Initial values loaded on mount
+- **🎯 Type Safety** - Full TypeScript support with proper types
+- **🛡️ Error Handling** - Built-in error handling with console warnings
+- **🔧 Simple API** - Consistent `[value, setValue, contains, clear]` pattern
+
 ## 🎯 Usage Examples
 
-### Example 1: User Settings
+### Example 1: React Hooks in Practice
+
+```typescript
+import React from 'react';
+import { View, Text, Switch, Button, TextInput } from 'react-native';
+import {
+  usePreferenceString,
+  usePreferenceBoolean,
+  usePreferenceObject,
+  usePreferenceNamespace
+} from 'react-native-turbo-preferences';
+
+interface UserSettings {
+  theme: 'light' | 'dark';
+  fontSize: number;
+  language: string;
+}
+
+function SettingsScreen() {
+  // Namespace management
+  const [namespace, setNamespace, resetToDefault] = usePreferenceNamespace();
+
+  // Basic preferences
+  const [username, setUsername, hasUsername, clearUsername] = usePreferenceString('username');
+  const [notifications, setNotifications, , clearNotifications] = usePreferenceBoolean('notifications');
+
+  // Complex object preferences
+  const [settings, setSettings, hasSettings, clearSettings] =
+    usePreferenceObject<UserSettings>('userSettings');
+
+  const updateSettings = (newSettings: Partial<UserSettings>) => {
+    setSettings({ ...settings, ...newSettings });
+  };
+
+  return (
+    <View style={{ padding: 20 }}>
+      {/* Namespace Control */}
+      <Text>Current namespace: {namespace || 'Default'}</Text>
+      <Button title="User Prefs" onPress={() => setNamespace('user')} />
+      <Button title="App Prefs" onPress={() => setNamespace('app')} />
+      <Button title="Reset Namespace" onPress={resetToDefault} />
+
+      {/* String Preference */}
+      <Text>Username: {username || 'Not set'}</Text>
+      <TextInput
+        value={username || ''}
+        onChangeText={setUsername}
+        placeholder="Enter username"
+      />
+
+      {/* Boolean Preference */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text>Notifications: </Text>
+        <Switch
+          value={notifications ?? false}
+          onValueChange={setNotifications}
+        />
+      </View>
+
+      {/* Object Preference */}
+      <Text>Theme: {settings?.theme || 'Not set'}</Text>
+      <Button
+        title="Dark Theme"
+        onPress={() => updateSettings({ theme: 'dark' })}
+      />
+      <Button
+        title="Light Theme"
+        onPress={() => updateSettings({ theme: 'light' })}
+      />
+
+      {/* Clear actions */}
+      <Button title="Clear All" onPress={() => {
+        clearUsername();
+        clearNotifications();
+        clearSettings();
+      }} />
+    </View>
+  );
+}
+```
+
+### Example 2: User Settings
 
 ```typescript
 import Prefs from 'react-native-turbo-preferences';
@@ -338,6 +643,8 @@ try {
 
 ## 📋 API Reference
 
+### Imperative API
+
 | Method                | Description       | Parameters                    | Returns                                   |
 | --------------------- | ----------------- | ----------------------------- | ----------------------------------------- |
 | `setName(name)`       | Switch namespace  | `name: string \| null`        | `Promise<void>`                           |
@@ -350,6 +657,16 @@ try {
 | `clearMultiple(keys)` | Delete multiple   | `keys: string[]`              | `Promise<void>`                           |
 | `getAll()`            | Get all keys      | None                          | `Promise<Record<string, string>>`         |
 | `clearAll()`          | Clear store       | None                          | `Promise<void>`                           |
+
+### React Hooks API
+
+| Hook                        | Description             | Parameters    | Returns                                     |
+| --------------------------- | ----------------------- | ------------- | ------------------------------------------- |
+| `usePreferenceString(key)`  | String preference hook  | `key: string` | `[value, setValue, contains, clear]`        |
+| `usePreferenceNumber(key)`  | Number preference hook  | `key: string` | `[value, setValue, contains, clear]`        |
+| `usePreferenceBoolean(key)` | Boolean preference hook | `key: string` | `[value, setValue, contains, clear]`        |
+| `usePreferenceObject(key)`  | Object preference hook  | `key: string` | `[value, setValue, contains, clear]`        |
+| `usePreferenceNamespace()`  | Namespace management    | None          | `[namespace, setNamespace, resetToDefault]` |
 
 ## 🔒 Security
 
@@ -403,10 +720,12 @@ yarn start
 The example app demonstrates:
 
 - ✅ All API methods
+- ✅ React Hooks usage
 - ✅ Namespace switching
 - ✅ Batch operations
 - ✅ Error handling
 - ✅ Real-time updates
+- ✅ Tab navigation (Normal API, Hooks, Benchmarks)
 
 ## 🧪 Testing
 
@@ -526,7 +845,7 @@ yarn example       # Run example app
 - [x] ✅ TypeScript definitions
 - [x] ✅ Performance monitoring & benchmarking (iOS + Android)
 - [x] ✅ Memory footprint analysis (iOS + Android)
-- [ ] 🔄 React hooks (In Progress)
+- [x] ✅ React hooks (usePreferenceString, usePreferenceNumber, usePreferenceBoolean, usePreferenceObject, usePreferenceNamespace)
 
 ## 🤝 Contributing
 
@@ -554,43 +873,86 @@ yarn lint:fix
 ## ❓ FAQ
 
 <details>
-<summary><strong>How do I handle errors?</strong></summary>
+<summary><strong>How do I handle errors in hooks?</strong></summary>
 
-Use try-catch blocks with async/await:
+Hooks handle errors internally and log warnings to console. For custom error handling:
 
 ```typescript
-try {
-  await Prefs.set('key', 'value');
-} catch (error) {
-  console.error('Error saving preference:', error.message);
-  // Handle error appropriately
-}
+const [value, setValue] = usePreferenceString('key');
+
+const handleSave = async () => {
+  try {
+    await setValue('new value');
+    console.log('Saved successfully!');
+  } catch (error) {
+    console.error('Save failed:', error);
+    // Show user feedback
+  }
+};
 ```
 
 </details>
 
 <details>
-<summary><strong>Can I use this in production?</strong></strong></summary>
+<summary><strong>Do hooks automatically sync between components?</strong></summary>
 
-Yes! This package is production-ready and follows React Native best practices. Make sure to:
+No, hooks don't automatically sync. Each hook instance manages its own state. If you need real-time sync between components, consider using a state management library like Redux or Zustand with the imperative API.
 
-- Set up proper error handling
-- Use appropriate namespaces for data organization
-- Monitor performance in production
-- Test on both platforms thoroughly
 </details>
 
 <details>
+<summary><strong>What's the difference between namespaces and keys?</strong></summary>
+
+- **Namespace**: Different storage "files" (like `user_settings`, `app_config`)
+- **Keys**: Individual preferences within a namespace (like `username`, `theme`)
+
+```typescript
+// Switch to user namespace
+await Prefs.setName('user_settings');
+await Prefs.set('username', 'John'); // Stored in user_settings
+
+// Switch to app namespace
+await Prefs.setName('app_config');
+await Prefs.set('username', 'Admin'); // Different storage!
+```
+
+</details>
+
 <details>
-<summary><strong>Why TurboModule instead of regular Native Module?</strong></summary>
+<summary><strong>Can I store complex objects?</strong></summary>
 
-TurboModules provide:
+Yes! Use `usePreferenceObject` or store JSON strings manually:
 
-- Better performance with New Architecture
-- Automatic code generation
-- Type safety improvements
-- Future-proof architecture
-- Better integration with React Native's evolving ecosystem
+```typescript
+// With hook (recommended)
+const [user, setUser] = usePreferenceObject<{ name: string; age: number }>(
+  'user'
+);
+
+// Manual approach
+await Prefs.set('user', JSON.stringify({ name: 'John', age: 30 }));
+const userStr = await Prefs.get('user');
+const user = userStr ? JSON.parse(userStr) : null;
+```
+
+</details>
+
+<details>
+<summary><strong>Is data encrypted or secure?</strong></summary>
+
+**No!** This library uses NSUserDefaults (iOS) and SharedPreferences (Android), which store data in plain text.
+
+**Never store sensitive data like:**
+
+- Passwords, tokens, credit cards
+- Personal identification numbers
+- Any confidential information
+
+**For secure storage, use:**
+
+- `react-native-keychain` (iOS Keychain)
+- `react-native-encrypted-storage` (Android EncryptedSharedPreferences)
+
 </details>
 
 ## 📄 License
@@ -606,6 +968,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - 🐛 **Issues:** [GitHub Issues](https://github.com/hamzamekk/react-native-turbo-preferences/issues)
+- 💡 **Request a Feature:** [Feature Requests](https://github.com/hamzamekk/react-native-turbo-preferences/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=)
 - 📖 **Documentation:** [Full API Docs](https://github.com/hamzamekk/react-native-turbo-preferences#readme)
 - 🌟 **Star this repo** if you found it helpful!
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/hamzamekk/react-native-turbo-preferences/discussions)

@@ -2,6 +2,14 @@ require "json"
 
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
+# Show build message
+puts ""
+puts "🚀 Thank you for using react-native-turbo-preferences!"
+puts ""
+puts "Made with ❤️ by hamzamekk"
+puts "⭐ Support the project with a star: https://github.com/hamzamekk/react-native-turbo-preferences"
+puts ""
+
 Pod::Spec.new do |s|
   s.name         = "TurboPreferences"
   s.version      = package["version"]
