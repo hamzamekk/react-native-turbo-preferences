@@ -1,6 +1,6 @@
 import TurboPreferences from './NativeTurboPreferences';
 
-export function setName(name: string): Promise<void> {
+export function setName(name: string | null): Promise<void> {
   return TurboPreferences.setName(name);
 }
 

@@ -124,7 +124,7 @@ export default function App() {
   } | null>(null);
   const kv = usePreference(keyName);
 
-  // Demo: New hook API
+  // Demo: New hook APIs
   const [demoValue, setDemoValue, demoContains, clearDemo] =
     usePreferenceString('demo_key');
 

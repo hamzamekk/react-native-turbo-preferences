@@ -8,12 +8,18 @@ class TurboPreferences: NSObject {
   var suiteName: String?
 
   @objc
-  func setName(_ name: String) {
+  func setName(_ name: String?) {
     suiteName = name
-    if let groupDefaults = UserDefaults(suiteName: name) {
-      defaults = groupDefaults
+    if let name = name, !name.isEmpty {
+      // Use custom suite
+      if let groupDefaults = UserDefaults(suiteName: name) {
+        defaults = groupDefaults
+      } else {
+        print("Error setting custom suite name: \(name)")
+      }
     } else {
-      print("Error setting name")
+      // Go back to standard UserDefaults
+      defaults = UserDefaults.standard
     }
   }
   

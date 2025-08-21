@@ -8,7 +8,7 @@ export interface Spec extends TurboModule {
    * Android: getSharedPreferences(name, MODE_PRIVATE)
    * Pass undefined/null to go back to the standard/default file.
    */
-  setName(name: string): Promise<void>;
+  setName(name: string | null): Promise<void>;
 
   // ----- Single key ops -----
   get(key: string): Promise<string | null>;
