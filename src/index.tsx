@@ -1,6 +1,6 @@
 import TurboPreferences from './NativeTurboPreferences';
 
-export function setName(name: string): Promise<void> {
+export function setName(name: string | null): Promise<void> {
   return TurboPreferences.setName(name);
 }
 
@@ -43,5 +43,8 @@ export function clearMultiple(keys: string[]): Promise<void> {
 export function contains(key: string): Promise<boolean> {
   return TurboPreferences.contains(key);
 }
+
+// Export hooks
+export * from './hooks';
 
 export default TurboPreferences;

@@ -28,9 +28,9 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     return context.getSharedPreferences(prefs_name, Context.MODE_PRIVATE)
   }
 
-  override fun setName(name: String, promise: Promise) {
+  override fun setName(name: String?, promise: Promise) {
     try {
-      prefs_name = name
+      prefs_name = if (name.isNullOrEmpty()) "default" else name
       promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error setting name: ${e.message}")
