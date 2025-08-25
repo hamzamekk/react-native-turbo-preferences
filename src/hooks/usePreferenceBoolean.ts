@@ -76,7 +76,7 @@ export function usePreferenceBoolean(
 
         if (currentValue !== null) {
           // Parse boolean from string - handle various boolean representations
-          const lowerValue = currentValue.toLowerCase();
+          const lowerValue = currentValue?.toLowerCase();
           if (lowerValue === 'true' || lowerValue === '1') {
             setValue(true);
           } else if (lowerValue === 'false' || lowerValue === '0') {
