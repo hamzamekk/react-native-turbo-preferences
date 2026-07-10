@@ -78,7 +78,7 @@ export default function BenchmarksScreen() {
         total: 2000000,
         limit: 2000000,
       };
-    } catch (error) {
+    } catch {
       // Ultimate fallback
       return {
         used: Math.floor(Math.random() * 1000000),
