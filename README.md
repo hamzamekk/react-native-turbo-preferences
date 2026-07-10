@@ -412,6 +412,30 @@ Clears the current store.
 await Prefs.clearAll(); // ⚠️ Use with caution!
 ```
 
+### Change Listeners
+
+#### `addPreferenceChangeListener(listener): EventSubscription`
+
+Fires when a value in the current store changes — **including writes made by native code** (widgets, watch apps, SDKs), not just through this module.
+
+```typescript
+import { addPreferenceChangeListener } from 'react-native-turbo-preferences';
+
+const subscription = addPreferenceChangeListener((event) => {
+  console.log('changed:', event.key); // null when the whole store changed at once
+});
+
+// later
+subscription.remove();
+```
+
+**Platform behavior:**
+
+- **iOS:** `NSUserDefaultsDidChangeNotification`, diffed per key against a snapshot of the store's persistent domain. Fires for changes made within your app's process.
+- **Android:** `SharedPreferences.OnSharedPreferenceChangeListener` on the current file. `event.key` is `null` when the store was cleared as a whole (API 30+).
+
+> Hooks subscribe automatically — two components using `usePreferenceString('username')` now stay in sync, and both update if native code writes the key.
+
 ### Widget Operations
 
 #### `reloadWidgets(kind?: string): Promise<void>`
@@ -828,6 +852,7 @@ try {
 | `getInt(key)`         | Retrieve integer  | `key: string`                 | `Promise<number \| null>`                 |
 | `setDouble(key, value)` | Store native double/float | `key: string, value: number` | `Promise<void>`                  |
 | `getDouble(key)`      | Retrieve double   | `key: string`                 | `Promise<number \| null>`                 |
+| `addPreferenceChangeListener(fn)` | Subscribe to store changes | `fn: (event) => void` | `EventSubscription`              |
 | `setMultiple(values)` | Store multiple    | `values: Array<{key, value}>` | `Promise<void>`                           |
 | `getMultiple(keys)`   | Retrieve multiple | `keys: string[]`              | `Promise<Record<string, string \| null>>` |
 | `clearMultiple(keys)` | Delete multiple   | `keys: string[]`              | `Promise<void>`                           |
@@ -1026,7 +1051,7 @@ yarn example       # Run example app
 - [x] ✅ `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
 - [x] ✅ Expo config plugin — auto-configure the App Group entitlement from `app.json`
 - [x] ✅ Typed values (bool/int/double) so native readers get real types, not strings
-- [ ] 🔜 Change listeners — react to writes from native code / sync hooks across components
+- [x] ✅ Change listeners — react to writes from native code / sync hooks across components
 - [ ] 🔜 Handle-based stores — use multiple namespaces at once without global `setName`
 
 ## 🤝 Contributing
@@ -1078,7 +1103,7 @@ const handleSave = async () => {
 <details>
 <summary><strong>Do hooks automatically sync between components?</strong></summary>
 
-No, hooks don't automatically sync. Each hook instance manages its own state. If you need real-time sync between components, consider using a state management library like Redux or Zustand with the imperative API.
+Yes. Hooks subscribe to store change events, so every hook instance watching a key updates when that key changes — whether the write came from another component, the imperative API, or native code. For cross-cutting logic outside components, use `addPreferenceChangeListener`.
 
 </details>
 

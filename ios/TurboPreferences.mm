@@ -1,9 +1,75 @@
 #import "TurboPreferences.h"
 #import <React/RCTLog.h>
 
-@implementation TurboPreferences
+@implementation TurboPreferences {
+  NSDictionary *_snapshot;
+  BOOL _observing;
+  BOOL _suppressChangeEvents;
+}
 
 RCT_EXPORT_MODULE(TurboPreferences)
+
+- (void)dealloc
+{
+    if (_observing) {
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+    }
+}
+
+// The generated emit helpers call into a std::function that is only wired up
+// here, so change observation must not start any earlier.
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper
+{
+    [super setEventEmitterCallback:eventEmitterCallbackWrapper];
+    if (!_observing) {
+        _observing = YES;
+        _snapshot = [self currentDomainSnapshot];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(userDefaultsDidChange:)
+                                                     name:NSUserDefaultsDidChangeNotification
+                                                   object:nil];
+    }
+}
+
+// Snapshot of the current store's persistent domain — unlike
+// dictionaryRepresentation, this excludes NSGlobalDomain noise.
+- (NSDictionary *)currentDomainSnapshot
+{
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+    NSString *domain = (suiteName && suiteName.length > 0)
+        ? suiteName
+        : [[NSBundle mainBundle] bundleIdentifier];
+    return [defaults persistentDomainForName:domain] ?: @{};
+}
+
+- (void)userDefaultsDidChange:(NSNotification *)notification
+{
+    @synchronized (self) {
+        NSDictionary *newSnapshot = [self currentDomainSnapshot];
+        NSDictionary *oldSnapshot = _snapshot ?: @{};
+        _snapshot = newSnapshot;
+
+        if (_suppressChangeEvents) {
+            return;
+        }
+
+        NSMutableSet *keys = [NSMutableSet setWithArray:oldSnapshot.allKeys];
+        [keys addObjectsFromArray:newSnapshot.allKeys];
+
+        for (NSString *key in keys) {
+            if ([key hasPrefix:@"__turbo_preferences_"]) {
+                continue;
+            }
+            id oldValue = oldSnapshot[key];
+            id newValue = newSnapshot[key];
+            if (oldValue == newValue || [oldValue isEqual:newValue]) {
+                continue;
+            }
+            [self emitOnPreferenceChange:@{ @"key": key }];
+        }
+    }
+}
 
 - (NSUserDefaults *)userDefaults {
     static NSUserDefaults *defaults = nil;
@@ -27,12 +93,18 @@ RCT_EXPORT_MODULE(TurboPreferences)
 {
     // This method is mainly for Android compatibility
     // On iOS, we'll store the suite name in a special key for reference
-    if (name && name.length > 0) {
-        [[self userDefaults] setObject:name forKey:@"__turbo_preferences_suite_name__"];
-    } else {
-        [[self userDefaults] removeObjectForKey:@"__turbo_preferences_suite_name__"];
+    @synchronized (self) {
+        // Switching stores is not a value change — swap the snapshot silently
+        _suppressChangeEvents = YES;
+        if (name && name.length > 0) {
+            [[self userDefaults] setObject:name forKey:@"__turbo_preferences_suite_name__"];
+        } else {
+            [[self userDefaults] removeObjectForKey:@"__turbo_preferences_suite_name__"];
+        }
+        [[self userDefaults] synchronize];
+        _snapshot = [self currentDomainSnapshot];
+        _suppressChangeEvents = NO;
     }
-    [[self userDefaults] synchronize];
     resolve(@(YES));
 }
 
