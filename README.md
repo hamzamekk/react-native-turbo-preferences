@@ -6,19 +6,38 @@
 [![React Native](https://img.shields.io/badge/React%20Native-0.75+-blue.svg)](https://reactnative.dev/)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://reactnative.dev/)
 
-> ⚡ A fast, cross-platform TurboModule for app preferences and key-value storage, using NSUserDefaults on iOS and SharedPreferences on Android. Built for React Native's New Architecture.
+> ⚡ Share preferences between your React Native app and **iOS widgets, watch apps, and app extensions** — App Groups (`NSUserDefaults`) on iOS, `SharedPreferences` on Android. Built as a TurboModule for React Native's New Architecture.
+
+Your React Native JS code can't be seen by a WidgetKit widget, a watchOS app, or a share extension — the only bridge between them is a shared native store. This library gives you direct, typed access to that store: `UserDefaults(suiteName:)` App Group containers on iOS and named `SharedPreferences` files on Android.
+
+It's also a great fit whenever native code (SDKs, Settings.bundle, Android home-screen widgets) needs to read values your JS writes — or plain fast key-value storage for app preferences.
 
 ## 🌟 Features
 
-- 🚀 **New Architecture Ready** — Implemented as a TurboModule for maximum performance
+- 📲 **App Group Sharing** — Write from JS, read from your iOS widget, watch app, or extension
+- 🚀 **New Architecture Native** — A true TurboModule, not an old bridge module running through interop
 - 🪝 **React Hooks** — Convenient hooks for reactive state management
 - 📱 **Cross-Platform** — Same JS API for iOS + Android with native optimizations
-- 📦 **Lightweight** — Wraps native APIs (NSUserDefaults, SharedPreferences) directly
-- 🗂 **Namespace Support** — Switch between default store and named suite/file
+- 📦 **Lightweight** — Wraps native APIs (NSUserDefaults, SharedPreferences) directly, no custom storage format
+- 🗂 **Namespace Support** — Switch between the default store and any named suite/file
 - 🛠 **Batch Operations** — Set/get/remove multiple keys at once for efficiency
 - 🧹 **Full Control** — Get all keys, clear store, check existence
-- 🔒 **Type Safe** — Full TypeScript support with proper type definitions
-- ⚡ **Turbo Performance** — Built for React Native's New Architecture
+- 🔒 **Type Safe** — Written in TypeScript with full type definitions
+
+## 🤔 Why this library?
+
+The two libraries most apps use for App Group / native preference sharing haven't shipped a release in years:
+
+|                       | react-native-turbo-preferences        | [react-native-shared-group-preferences](https://www.npmjs.com/package/react-native-shared-group-preferences) | [react-native-default-preference](https://www.npmjs.com/package/react-native-default-preference) |
+| --------------------- | -------------------------------------- | ----------------------------------------------- | -------------------------------------------- |
+| Actively maintained   | ✅                                      | ❌ Last release Sept 2023                        | ❌ Last release June 2022                     |
+| New Architecture      | ✅ Native TurboModule                   | ⚠️ Old bridge (via interop layer)                | ⚠️ Old bridge (via interop layer)             |
+| iOS App Groups        | ✅ `UserDefaults(suiteName:)`           | ✅                                               | ✅                                            |
+| Android backend       | ✅ `SharedPreferences` (app-sandboxed)  | ⚠️ Public external-storage JSON file, needs storage permissions, readable by other apps | ✅ `SharedPreferences` |
+| Expo                  | ✅ Dev builds / EAS ([guide below](#-sharing-data-with-an-ios-widget-app-groups)) | ❌ "Doesn't work for Expo" (their README)        | ⚠️ Undocumented                               |
+| React hooks           | ✅                                      | ❌                                               | ❌                                            |
+| Batch operations      | ✅                                      | ❌                                               | ✅                                            |
+| TypeScript            | ✅ Written in TS                        | ❌                                               | ⚠️ Type definitions only                      |
 
 ## 📦 Installation
 
@@ -86,6 +105,66 @@ function UserProfile() {
   );
 }
 ```
+
+## 📲 Sharing data with an iOS Widget (App Groups)
+
+This is the flagship use case: your React Native app writes a value, and your WidgetKit widget (or watch app / share extension / App Clip) reads it natively. Both sides just need to point at the same **App Group**.
+
+### 1. Enable the App Group
+
+**Bare React Native:** in Xcode, select your app target → _Signing & Capabilities_ → _+ Capability_ → **App Groups** → add a group like `group.com.yourcompany.yourapp`. Repeat for your widget/extension target with the **same** group id.
+
+**Expo:** add the entitlement in `app.json` — no config plugin needed, `expo prebuild` / EAS Build picks it up:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.yourcompany.yourapp"]
+      }
+    }
+  }
+}
+```
+
+> To create the widget extension target itself in an Expo project, use a target plugin such as [`@bacons/apple-targets`](https://github.com/EvanBacon/expo-apple-targets), and give the widget target the same App Group entitlement.
+
+### 2. Write from React Native
+
+```typescript
+import Prefs from 'react-native-turbo-preferences';
+
+await Prefs.setName('group.com.yourcompany.yourapp'); // switch to the App Group container
+await Prefs.set('streak', '42');
+await Prefs.set('lastWorkout', 'Push day');
+```
+
+### 3. Read from your widget (Swift)
+
+```swift
+struct Provider: TimelineProvider {
+  func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+    let defaults = UserDefaults(suiteName: "group.com.yourcompany.yourapp")
+    let streak = defaults?.string(forKey: "streak") ?? "0"
+    let workout = defaults?.string(forKey: "lastWorkout") ?? "—"
+    // build your timeline entry from these values …
+  }
+}
+```
+
+> **Note:** all values are stored as strings — read them with `string(forKey:)` and parse as needed. iOS decides when widget timelines refresh; to force an immediate refresh after writing, call `WidgetCenter.shared.reloadAllTimelines()` from native code (a JS-callable `reloadWidgets()` is on the [roadmap](#-roadmap)).
+
+### Android: sharing with native code
+
+On Android, `setName('my_file')` maps to `getSharedPreferences("my_file", MODE_PRIVATE)` — the same file any native code in **your own app** (a Glance/home-screen widget, a headless service, an SDK) can read:
+
+```kotlin
+val prefs = context.getSharedPreferences("my_file", Context.MODE_PRIVATE)
+val streak = prefs.getString("streak", "0")
+```
+
+Data stays inside your app's sandbox. (Unlike libraries that write a world-readable JSON file to external storage, other apps can't read, edit, or delete it — and no storage permissions are required.)
 
 ## 📖 API Documentation
 
@@ -846,6 +925,11 @@ yarn example       # Run example app
 - [x] ✅ Performance monitoring & benchmarking (iOS + Android)
 - [x] ✅ Memory footprint analysis (iOS + Android)
 - [x] ✅ React hooks (usePreferenceString, usePreferenceNumber, usePreferenceBoolean, usePreferenceObject, usePreferenceNamespace)
+- [ ] 🔜 `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
+- [ ] 🔜 Expo config plugin — auto-configure the App Group entitlement from `app.json`
+- [ ] 🔜 Typed values (bool/int/double) so native readers get real types, not strings
+- [ ] 🔜 Change listeners — react to writes from native code / sync hooks across components
+- [ ] 🔜 Handle-based stores — use multiple namespaces at once without global `setName`
 
 ## 🤝 Contributing
 
