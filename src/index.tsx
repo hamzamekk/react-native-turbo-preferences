@@ -1,13 +1,18 @@
 import type { EventSubscription } from 'react-native';
 import TurboPreferences from './NativeTurboPreferences';
 import type { PreferenceChangeEvent } from './NativeTurboPreferences';
+import { getCurrentName, setCurrentName } from './currentStore';
+import { createStore, validateInt } from './store';
+import type { PreferenceStore } from './store';
 
-export type { PreferenceChangeEvent };
+export type { PreferenceChangeEvent, PreferenceStore };
+export { createStore };
 
 /**
- * Subscribe to changes in the current store — fires for writes made
- * through this module and by native code (widgets, SDKs).
- * `event.key` is null when the whole store changed at once.
+ * Subscribe to changes across all stores this module has touched —
+ * fires for writes made through this module and by native code
+ * (widgets, SDKs). `event.store` says which store changed; use
+ * `store.addListener()` for a single store.
  */
 export function addPreferenceChangeListener(
   listener: (event: PreferenceChangeEvent) => void
@@ -15,86 +20,123 @@ export function addPreferenceChangeListener(
   return TurboPreferences.onPreferenceChange(listener);
 }
 
+export function reloadWidgets(kind?: string): Promise<void> {
+  return TurboPreferences.reloadWidgets(kind ?? null);
+}
+
+// ---------------------------------------------------------------------------
+// Global-namespace API. These route through a module-level "current store"
+// selected with setName; prefer createStore() and one handle per store.
+// ---------------------------------------------------------------------------
+
+/** The store name the global API currently points at (null = default). */
+export function getCurrentStoreName(): string | null {
+  return getCurrentName();
+}
+
+/**
+ * @deprecated Use `createStore(name)` and keep a handle instead —
+ * setName switches a global that every call in your app shares.
+ * Note: the selection lives in JS and resets on app restart (this was
+ * already Android's behavior; iOS used to persist it across launches).
+ */
 export function setName(name: string | null): Promise<void> {
-  return TurboPreferences.setName(name);
+  setCurrentName(name);
+  return Promise.resolve();
 }
 
 export function get(key: string): Promise<string | null> {
-  return TurboPreferences.get(key);
+  return TurboPreferences.get(getCurrentName(), key);
 }
 
 export function getAll(): Promise<{ [key: string]: string } | null> {
-  return TurboPreferences.getAll();
+  return TurboPreferences.getAll(getCurrentName());
 }
 
 export function set(key: string, value: string): Promise<void> {
-  return TurboPreferences.set(key, value);
+  return TurboPreferences.set(getCurrentName(), key, value);
 }
 
 export function clear(key: string): Promise<void> {
-  return TurboPreferences.clear(key);
+  return TurboPreferences.clear(getCurrentName(), key);
 }
 
 export function clearAll(): Promise<void> {
-  return TurboPreferences.clearAll();
+  return TurboPreferences.clearAll(getCurrentName());
 }
 
 export function setMultiple(
   values: { key: string; value: string }[]
 ): Promise<void> {
-  return TurboPreferences.setMultiple(values);
+  return TurboPreferences.setMultiple(getCurrentName(), values);
 }
 
 export function getMultiple(
   keys: string[]
 ): Promise<{ [key: string]: string | null }> {
-  return TurboPreferences.getMultiple(keys);
+  return TurboPreferences.getMultiple(getCurrentName(), keys);
 }
 
 export function clearMultiple(keys: string[]): Promise<void> {
-  return TurboPreferences.clearMultiple(keys);
+  return TurboPreferences.clearMultiple(getCurrentName(), keys);
 }
 
 export function contains(key: string): Promise<boolean> {
-  return TurboPreferences.contains(key);
-}
-
-export function reloadWidgets(kind?: string): Promise<void> {
-  return TurboPreferences.reloadWidgets(kind ?? null);
+  return TurboPreferences.contains(getCurrentName(), key);
 }
 
 export function setBoolean(key: string, value: boolean): Promise<void> {
-  return TurboPreferences.setBoolean(key, value);
+  return TurboPreferences.setBoolean(getCurrentName(), key, value);
 }
 
 export function getBoolean(key: string): Promise<boolean | null> {
-  return TurboPreferences.getBoolean(key);
+  return TurboPreferences.getBoolean(getCurrentName(), key);
 }
 
 export function setInt(key: string, value: number): Promise<void> {
-  if (!Number.isInteger(value) || value < -2147483648 || value > 2147483647) {
-    return Promise.reject(
-      new TypeError(
-        `setInt expects a 32-bit integer, got ${value}. Use setDouble for other numbers.`
-      )
-    );
-  }
-  return TurboPreferences.setInt(key, value);
+  return (
+    validateInt(value) ?? TurboPreferences.setInt(getCurrentName(), key, value)
+  );
 }
 
 export function getInt(key: string): Promise<number | null> {
-  return TurboPreferences.getInt(key);
+  return TurboPreferences.getInt(getCurrentName(), key);
 }
 
 export function setDouble(key: string, value: number): Promise<void> {
-  return TurboPreferences.setDouble(key, value);
+  return TurboPreferences.setDouble(getCurrentName(), key, value);
 }
 
 export function getDouble(key: string): Promise<number | null> {
-  return TurboPreferences.getDouble(key);
+  return TurboPreferences.getDouble(getCurrentName(), key);
 }
 
 // Export hooks
 export * from './hooks';
 
-export default TurboPreferences;
+/**
+ * Default export mirrors the named functions (NOT the raw native
+ * module — its methods take a store name as the first argument).
+ */
+export default {
+  createStore,
+  addPreferenceChangeListener,
+  reloadWidgets,
+  getCurrentStoreName,
+  setName,
+  get,
+  getAll,
+  set,
+  clear,
+  clearAll,
+  setMultiple,
+  getMultiple,
+  clearMultiple,
+  contains,
+  setBoolean,
+  getBoolean,
+  setInt,
+  getInt,
+  setDouble,
+  getDouble,
+};

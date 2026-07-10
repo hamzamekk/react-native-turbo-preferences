@@ -11,22 +11,28 @@ export type PreferenceChangeEvent = {
    * (e.g. clearAll) — re-read anything you care about.
    */
   key?: string | null;
+  /**
+   * The store the change happened in: the suite/file name, or null for
+   * the default store.
+   */
+  store?: string | null;
 };
 
+/**
+ * Every method takes the store name as its first argument so the native
+ * layer stays stateless — pass null for the default store.
+ * iOS: UserDefaults(suiteName: name) / standardUserDefaults.
+ * Android: getSharedPreferences(name, MODE_PRIVATE) / the "default" file.
+ *
+ * JS-side store handles (createStore) and the deprecated setName shim
+ * both route through these.
+ */
 export interface Spec extends TurboModule {
-  // ----- Namespace / file selection -----
-  /**
-   * iOS: UserDefaults(suiteName)
-   * Android: getSharedPreferences(name, MODE_PRIVATE)
-   * Pass undefined/null to go back to the standard/default file.
-   */
-  setName(name: string | null): Promise<void>;
-
   // ----- Single key ops -----
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<void>;
-  clear(key: string): Promise<void>;
-  contains(key: string): Promise<boolean>; // aka hasKey
+  get(name: string | null, key: string): Promise<string | null>;
+  set(name: string | null, key: string, value: string): Promise<void>;
+  clear(name: string | null, key: string): Promise<void>;
+  contains(name: string | null, key: string): Promise<boolean>; // aka hasKey
 
   // ----- Typed ops -----
   /**
@@ -38,29 +44,36 @@ export interface Spec extends TurboModule {
    * Typed getters resolve null when the key is missing or holds an
    * incompatible type.
    */
-  setBoolean(key: string, value: boolean): Promise<void>;
-  getBoolean(key: string): Promise<boolean | null>;
-  setInt(key: string, value: Int32): Promise<void>;
-  getInt(key: string): Promise<number | null>;
-  setDouble(key: string, value: number): Promise<void>;
-  getDouble(key: string): Promise<number | null>;
+  setBoolean(name: string | null, key: string, value: boolean): Promise<void>;
+  getBoolean(name: string | null, key: string): Promise<boolean | null>;
+  setInt(name: string | null, key: string, value: Int32): Promise<void>;
+  getInt(name: string | null, key: string): Promise<number | null>;
+  setDouble(name: string | null, key: string, value: number): Promise<void>;
+  getDouble(name: string | null, key: string): Promise<number | null>;
 
   // ----- Batch ops -----
-  setMultiple(values: { key: string; value: string }[]): Promise<void>;
-  getMultiple(keys: string[]): Promise<{ [key: string]: string | null }>;
-  clearMultiple(keys: string[]): Promise<void>;
+  setMultiple(
+    name: string | null,
+    values: { key: string; value: string }[]
+  ): Promise<void>;
+  getMultiple(
+    name: string | null,
+    keys: string[]
+  ): Promise<{ [key: string]: string | null }>;
+  clearMultiple(name: string | null, keys: string[]): Promise<void>;
 
   // ----- Whole-store ops -----
-  getAll(): Promise<{ [key: string]: string }>;
-  clearAll(): Promise<void>;
+  getAll(name: string | null): Promise<{ [key: string]: string }>;
+  clearAll(name: string | null): Promise<void>;
 
   // ----- Change events -----
   /**
-   * Fires when a value in the current store changes — including writes
-   * made by native code (widgets, SDKs), not just through this module.
+   * Fires when a value changes in any store this module has touched —
+   * including writes made by native code (widgets, SDKs), not just
+   * through this module.
    * iOS: NSUserDefaultsDidChangeNotification (in-process changes) diffed
-   * against a snapshot of the store.
-   * Android: SharedPreferences.OnSharedPreferenceChangeListener.
+   * against per-store snapshots.
+   * Android: SharedPreferences.OnSharedPreferenceChangeListener per store.
    */
   readonly onPreferenceChange: EventEmitter<PreferenceChangeEvent>;
 

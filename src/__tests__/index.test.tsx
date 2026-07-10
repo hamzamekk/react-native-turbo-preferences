@@ -2,7 +2,6 @@
 jest.mock('../NativeTurboPreferences', () => ({
   __esModule: true,
   default: {
-    setName: jest.fn(),
     get: jest.fn(),
     getAll: jest.fn(),
     set: jest.fn(),
@@ -48,41 +47,55 @@ import {
 const mockModule = require('../NativeTurboPreferences').default;
 
 describe('React Native Turbo Preferences', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await setName(null);
   });
 
-  describe('setName', () => {
-    it('should switch to user-specific namespace', async () => {
-      mockModule.setName.mockResolvedValue(undefined);
+  describe('setName (deprecated global store)', () => {
+    it('should route subsequent calls to the selected store', async () => {
+      mockModule.get.mockResolvedValue('dark');
 
       await setName('user_123_preferences');
+      await get('theme');
 
-      expect(mockModule.setName).toHaveBeenCalledWith('user_123_preferences');
+      expect(mockModule.get).toHaveBeenCalledWith(
+        'user_123_preferences',
+        'theme'
+      );
     });
 
-    it('should switch to app group namespace (iOS)', async () => {
-      mockModule.setName.mockResolvedValue(undefined);
+    it('should route to an app group namespace (iOS)', async () => {
+      mockModule.set.mockResolvedValue(undefined);
 
       await setName('group.com.myapp.shared');
+      await set('streak', '42');
 
-      expect(mockModule.setName).toHaveBeenCalledWith('group.com.myapp.shared');
+      expect(mockModule.set).toHaveBeenCalledWith(
+        'group.com.myapp.shared',
+        'streak',
+        '42'
+      );
     });
 
-    it('should reset to default namespace', async () => {
-      mockModule.setName.mockResolvedValue(undefined);
+    it('should reset to the default store with an empty string', async () => {
+      mockModule.get.mockResolvedValue(null);
 
+      await setName('some_namespace');
       await setName('');
+      await get('theme');
 
-      expect(mockModule.setName).toHaveBeenCalledWith('');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'theme');
     });
 
-    it('should handle null namespace', async () => {
-      mockModule.setName.mockResolvedValue(undefined);
+    it('should reset to the default store with null', async () => {
+      mockModule.get.mockResolvedValue(null);
 
+      await setName('some_namespace');
       await setName(null as any);
+      await get('theme');
 
-      expect(mockModule.setName).toHaveBeenCalledWith(null);
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'theme');
     });
   });
 
@@ -93,7 +106,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await get('theme');
 
-      expect(mockModule.get).toHaveBeenCalledWith('theme');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'theme');
       expect(result).toBe(expectedValue);
     });
 
@@ -102,7 +115,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await get('non_existent_key');
 
-      expect(mockModule.get).toHaveBeenCalledWith('non_existent_key');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'non_existent_key');
       expect(result).toBe(null);
     });
 
@@ -117,7 +130,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await get('user_profile');
 
-      expect(mockModule.get).toHaveBeenCalledWith('user_profile');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'user_profile');
       expect(result).toBe(jsonString);
       expect(JSON.parse(result!)).toEqual(userData);
     });
@@ -127,7 +140,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await get('empty_value_key');
 
-      expect(mockModule.get).toHaveBeenCalledWith('empty_value_key');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'empty_value_key');
       expect(result).toBe('');
     });
   });
@@ -138,7 +151,7 @@ describe('React Native Turbo Preferences', () => {
 
       await set('language', 'en');
 
-      expect(mockModule.set).toHaveBeenCalledWith('language', 'en');
+      expect(mockModule.set).toHaveBeenCalledWith(null, 'language', 'en');
     });
 
     it('should store complex data as JSON', async () => {
@@ -153,6 +166,7 @@ describe('React Native Turbo Preferences', () => {
       await set('user_settings', JSON.stringify(userSettings));
 
       expect(mockModule.set).toHaveBeenCalledWith(
+        null,
         'user_settings',
         JSON.stringify(userSettings)
       );
@@ -163,7 +177,7 @@ describe('React Native Turbo Preferences', () => {
 
       await set('empty_key', '');
 
-      expect(mockModule.set).toHaveBeenCalledWith('empty_key', '');
+      expect(mockModule.set).toHaveBeenCalledWith(null, 'empty_key', '');
     });
 
     it('should store numeric values as strings', async () => {
@@ -172,8 +186,8 @@ describe('React Native Turbo Preferences', () => {
       await set('max_retries', '3');
       await set('timeout', '5000');
 
-      expect(mockModule.set).toHaveBeenCalledWith('max_retries', '3');
-      expect(mockModule.set).toHaveBeenCalledWith('timeout', '5000');
+      expect(mockModule.set).toHaveBeenCalledWith(null, 'max_retries', '3');
+      expect(mockModule.set).toHaveBeenCalledWith(null, 'timeout', '5000');
     });
   });
 
@@ -183,7 +197,7 @@ describe('React Native Turbo Preferences', () => {
 
       await clear('temporary_token');
 
-      expect(mockModule.clear).toHaveBeenCalledWith('temporary_token');
+      expect(mockModule.clear).toHaveBeenCalledWith(null, 'temporary_token');
     });
 
     it('should handle clearing non-existent keys gracefully', async () => {
@@ -191,7 +205,7 @@ describe('React Native Turbo Preferences', () => {
 
       await clear('non_existent_key');
 
-      expect(mockModule.clear).toHaveBeenCalledWith('non_existent_key');
+      expect(mockModule.clear).toHaveBeenCalledWith(null, 'non_existent_key');
     });
   });
 
@@ -201,7 +215,7 @@ describe('React Native Turbo Preferences', () => {
 
       const exists = await contains('user_id');
 
-      expect(mockModule.contains).toHaveBeenCalledWith('user_id');
+      expect(mockModule.contains).toHaveBeenCalledWith(null, 'user_id');
       expect(exists).toBe(true);
     });
 
@@ -210,7 +224,10 @@ describe('React Native Turbo Preferences', () => {
 
       const exists = await contains('non_existent_key');
 
-      expect(mockModule.contains).toHaveBeenCalledWith('non_existent_key');
+      expect(mockModule.contains).toHaveBeenCalledWith(
+        null,
+        'non_existent_key'
+      );
       expect(exists).toBe(false);
     });
 
@@ -219,7 +236,7 @@ describe('React Native Turbo Preferences', () => {
 
       const hasConfig = await contains('app_config');
 
-      expect(mockModule.contains).toHaveBeenCalledWith('app_config');
+      expect(mockModule.contains).toHaveBeenCalledWith(null, 'app_config');
       expect(hasConfig).toBe(true);
     });
   });
@@ -296,7 +313,7 @@ describe('React Native Turbo Preferences', () => {
 
       await setMultiple(profileData);
 
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(profileData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, profileData);
     });
 
     it('should store app configuration in batch', async () => {
@@ -310,7 +327,7 @@ describe('React Native Turbo Preferences', () => {
 
       await setMultiple(configData);
 
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(configData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, configData);
     });
 
     it('should handle empty batch gracefully', async () => {
@@ -318,7 +335,7 @@ describe('React Native Turbo Preferences', () => {
 
       await setMultiple([]);
 
-      expect(mockModule.setMultiple).toHaveBeenCalledWith([]);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, []);
     });
   });
 
@@ -335,7 +352,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await getMultiple(keys);
 
-      expect(mockModule.getMultiple).toHaveBeenCalledWith(keys);
+      expect(mockModule.getMultiple).toHaveBeenCalledWith(null, keys);
       expect(result).toEqual(expectedData);
     });
 
@@ -350,7 +367,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await getMultiple(keys);
 
-      expect(mockModule.getMultiple).toHaveBeenCalledWith(keys);
+      expect(mockModule.getMultiple).toHaveBeenCalledWith(null, keys);
       expect(result).toEqual(expectedData);
     });
 
@@ -366,7 +383,7 @@ describe('React Native Turbo Preferences', () => {
 
       const result = await getMultiple(keys);
 
-      expect(mockModule.getMultiple).toHaveBeenCalledWith(keys);
+      expect(mockModule.getMultiple).toHaveBeenCalledWith(null, keys);
       expect(result).toEqual(expectedData);
     });
   });
@@ -383,7 +400,7 @@ describe('React Native Turbo Preferences', () => {
 
       await clearMultiple(keysToClear);
 
-      expect(mockModule.clearMultiple).toHaveBeenCalledWith(keysToClear);
+      expect(mockModule.clearMultiple).toHaveBeenCalledWith(null, keysToClear);
     });
 
     it('should clear app cache data in batch', async () => {
@@ -397,7 +414,7 @@ describe('React Native Turbo Preferences', () => {
 
       await clearMultiple(cacheKeys);
 
-      expect(mockModule.clearMultiple).toHaveBeenCalledWith(cacheKeys);
+      expect(mockModule.clearMultiple).toHaveBeenCalledWith(null, cacheKeys);
     });
 
     it('should handle empty keys array gracefully', async () => {
@@ -405,16 +422,14 @@ describe('React Native Turbo Preferences', () => {
 
       await clearMultiple([]);
 
-      expect(mockModule.clearMultiple).toHaveBeenCalledWith([]);
+      expect(mockModule.clearMultiple).toHaveBeenCalledWith(null, []);
     });
   });
 
   describe('Integration Scenarios', () => {
     it('should handle complete user registration flow', async () => {
       // 1. Set user namespace
-      mockModule.setName.mockResolvedValue(undefined);
       await setName('user_456');
-      expect(mockModule.setName).toHaveBeenCalledWith('user_456');
 
       // 2. Store user profile
       const profileData = [
@@ -424,7 +439,10 @@ describe('React Native Turbo Preferences', () => {
       ];
       mockModule.setMultiple.mockResolvedValue(undefined);
       await setMultiple(profileData);
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(profileData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(
+        'user_456',
+        profileData
+      );
 
       // 3. Verify profile was stored
       const profileKeys = ['username', 'email', 'created_at'];
@@ -435,7 +453,10 @@ describe('React Native Turbo Preferences', () => {
       };
       mockModule.getMultiple.mockResolvedValue(expectedProfile);
       const storedProfile = await getMultiple(profileKeys);
-      expect(mockModule.getMultiple).toHaveBeenCalledWith(profileKeys);
+      expect(mockModule.getMultiple).toHaveBeenCalledWith(
+        'user_456',
+        profileKeys
+      );
       expect(storedProfile).toEqual(expectedProfile);
     });
 
@@ -448,18 +469,18 @@ describe('React Native Turbo Preferences', () => {
       ];
       mockModule.setMultiple.mockResolvedValue(undefined);
       await setMultiple(configData);
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(configData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, configData);
 
       // 2. Retrieve specific config
       mockModule.get.mockResolvedValue('v2');
       const apiVersion = await get('api_version');
-      expect(mockModule.get).toHaveBeenCalledWith('api_version');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'api_version');
       expect(apiVersion).toBe('v2');
 
       // 3. Check if config exists
       mockModule.contains.mockResolvedValue(true);
       const hasConfig = await contains('debug_mode');
-      expect(mockModule.contains).toHaveBeenCalledWith('debug_mode');
+      expect(mockModule.contains).toHaveBeenCalledWith(null, 'debug_mode');
       expect(hasConfig).toBe(true);
     });
 
@@ -467,25 +488,26 @@ describe('React Native Turbo Preferences', () => {
       // 1. Set default namespace preferences
       mockModule.set.mockResolvedValue(undefined);
       await set('default_theme', 'light');
-      expect(mockModule.set).toHaveBeenCalledWith('default_theme', 'light');
+      expect(mockModule.set).toHaveBeenCalledWith(
+        null,
+        'default_theme',
+        'light'
+      );
 
       // 2. Switch to user namespace
-      mockModule.setName.mockResolvedValue(undefined);
       await setName('user_789');
-      expect(mockModule.setName).toHaveBeenCalledWith('user_789');
 
       // 3. Set user-specific preferences
       await set('theme', 'dark');
-      expect(mockModule.set).toHaveBeenCalledWith('theme', 'dark');
+      expect(mockModule.set).toHaveBeenCalledWith('user_789', 'theme', 'dark');
 
       // 4. Switch back to default
       await setName('');
-      expect(mockModule.setName).toHaveBeenCalledWith('');
 
       // 5. Verify default preferences still exist
       mockModule.get.mockResolvedValue('light');
       const defaultTheme = await get('default_theme');
-      expect(mockModule.get).toHaveBeenCalledWith('default_theme');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'default_theme');
       expect(defaultTheme).toBe('light');
     });
 
@@ -498,13 +520,13 @@ describe('React Native Turbo Preferences', () => {
       ];
       mockModule.setMultiple.mockResolvedValue(undefined);
       await setMultiple(testData);
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(testData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, testData);
 
       // 2. Clear specific temporary files
       const tempKeys = ['temp_file_1', 'temp_file_2'];
       mockModule.clearMultiple.mockResolvedValue(undefined);
       await clearMultiple(tempKeys);
-      expect(mockModule.clearMultiple).toHaveBeenCalledWith(tempKeys);
+      expect(mockModule.clearMultiple).toHaveBeenCalledWith(null, tempKeys);
 
       // 3. Clear all remaining data
       mockModule.clearAll.mockResolvedValue(undefined);
@@ -522,6 +544,7 @@ describe('React Native Turbo Preferences', () => {
         'Storage full'
       );
       expect(mockModule.set).toHaveBeenCalledWith(
+        null,
         'large_data',
         'x'.repeat(1000000)
       );
@@ -532,7 +555,7 @@ describe('React Native Turbo Preferences', () => {
       mockModule.get.mockRejectedValue(permissionError);
 
       await expect(get('restricted_key')).rejects.toThrow('Permission denied');
-      expect(mockModule.get).toHaveBeenCalledWith('restricted_key');
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'restricted_key');
     });
 
     it('should handle network errors gracefully', async () => {
@@ -545,7 +568,7 @@ describe('React Native Turbo Preferences', () => {
       }));
 
       await expect(setMultiple(largeData)).rejects.toThrow('Network timeout');
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(largeData);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, largeData);
     });
   });
 
@@ -562,21 +585,23 @@ describe('React Native Turbo Preferences', () => {
       const duration = performance.now() - startTime;
 
       expect(duration).toBeLessThan(1000); // Should complete in under 1 second
-      expect(mockModule.setMultiple).toHaveBeenCalledWith(largeDataset);
+      expect(mockModule.setMultiple).toHaveBeenCalledWith(null, largeDataset);
     });
 
     it('should handle rapid namespace switching', async () => {
       const namespaces = Array.from({ length: 100 }, (_, i) => `ns_${i}`);
-      mockModule.setName.mockResolvedValue(undefined);
+      mockModule.get.mockResolvedValue(null);
 
       const startTime = performance.now();
       for (const ns of namespaces) {
         await setName(ns);
+        await get('key');
       }
       const duration = performance.now() - startTime;
 
       expect(duration).toBeLessThan(5000); // Should complete in under 5 seconds
-      expect(mockModule.setName).toHaveBeenCalledTimes(100);
+      expect(mockModule.get).toHaveBeenCalledTimes(100);
+      expect(mockModule.get).toHaveBeenLastCalledWith('ns_99', 'key');
     });
   });
 
@@ -588,7 +613,11 @@ describe('React Native Turbo Preferences', () => {
       await setBoolean('darkMode', true);
       const value = await getBoolean('darkMode');
 
-      expect(mockModule.setBoolean).toHaveBeenCalledWith('darkMode', true);
+      expect(mockModule.setBoolean).toHaveBeenCalledWith(
+        null,
+        'darkMode',
+        true
+      );
       expect(value).toBe(true);
     });
 
@@ -599,7 +628,7 @@ describe('React Native Turbo Preferences', () => {
       await setInt('streak', 42);
       const value = await getInt('streak');
 
-      expect(mockModule.setInt).toHaveBeenCalledWith('streak', 42);
+      expect(mockModule.setInt).toHaveBeenCalledWith(null, 'streak', 42);
       expect(value).toBe(42);
     });
 
@@ -626,8 +655,8 @@ describe('React Native Turbo Preferences', () => {
       await setInt('max', 2147483647);
       await setInt('min', -2147483648);
 
-      expect(mockModule.setInt).toHaveBeenCalledWith('max', 2147483647);
-      expect(mockModule.setInt).toHaveBeenCalledWith('min', -2147483648);
+      expect(mockModule.setInt).toHaveBeenCalledWith(null, 'max', 2147483647);
+      expect(mockModule.setInt).toHaveBeenCalledWith(null, 'min', -2147483648);
     });
 
     it('should set and get a double', async () => {
@@ -637,7 +666,7 @@ describe('React Native Turbo Preferences', () => {
       await setDouble('ratio', 3.14);
       const value = await getDouble('ratio');
 
-      expect(mockModule.setDouble).toHaveBeenCalledWith('ratio', 3.14);
+      expect(mockModule.setDouble).toHaveBeenCalledWith(null, 'ratio', 3.14);
       expect(value).toBe(3.14);
     });
 
@@ -676,6 +705,96 @@ describe('React Native Turbo Preferences', () => {
       captured?.({ key: 'theme' });
 
       expect(listener).toHaveBeenCalledWith({ key: 'theme' });
+    });
+  });
+
+  describe('createStore', () => {
+    const { createStore } = require('../index');
+
+    it('should route calls to the named store', async () => {
+      mockModule.set.mockResolvedValue(undefined);
+      mockModule.getInt.mockResolvedValue(42);
+
+      const appGroup = createStore('group.com.myapp.shared');
+      await appGroup.set('lastWorkout', 'Push day');
+      const streak = await appGroup.getInt('streak');
+
+      expect(appGroup.name).toBe('group.com.myapp.shared');
+      expect(mockModule.set).toHaveBeenCalledWith(
+        'group.com.myapp.shared',
+        'lastWorkout',
+        'Push day'
+      );
+      expect(mockModule.getInt).toHaveBeenCalledWith(
+        'group.com.myapp.shared',
+        'streak'
+      );
+      expect(streak).toBe(42);
+    });
+
+    it('should route to the default store when created without a name', async () => {
+      mockModule.get.mockResolvedValue('dark');
+
+      const defaults = createStore();
+      await defaults.get('theme');
+
+      expect(defaults.name).toBeNull();
+      expect(mockModule.get).toHaveBeenCalledWith(null, 'theme');
+    });
+
+    it('should allow two stores side by side without global state', async () => {
+      mockModule.set.mockResolvedValue(undefined);
+
+      const a = createStore('store_a');
+      const b = createStore('store_b');
+      await a.set('k', '1');
+      await b.set('k', '2');
+      await a.set('k2', '3');
+
+      expect(mockModule.set).toHaveBeenNthCalledWith(1, 'store_a', 'k', '1');
+      expect(mockModule.set).toHaveBeenNthCalledWith(2, 'store_b', 'k', '2');
+      expect(mockModule.set).toHaveBeenNthCalledWith(3, 'store_a', 'k2', '3');
+    });
+
+    it('should validate setInt on store handles', async () => {
+      const store = createStore('store_a');
+
+      await expect(store.setInt('n', 1.5)).rejects.toThrow(
+        /expects a 32-bit integer/
+      );
+      expect(mockModule.setInt).not.toHaveBeenCalled();
+    });
+
+    it('should filter store.addListener events to its own store', () => {
+      let captured: ((event: any) => void) | undefined;
+      mockModule.onPreferenceChange.mockImplementation((cb: any) => {
+        captured = cb;
+        return { remove: jest.fn() };
+      });
+      const listener = jest.fn();
+
+      const store = createStore('store_a');
+      store.addListener(listener);
+
+      captured?.({ key: 'k', store: 'store_b' });
+      expect(listener).not.toHaveBeenCalled();
+
+      captured?.({ key: 'k', store: 'store_a' });
+      expect(listener).toHaveBeenCalledWith({ key: 'k', store: 'store_a' });
+    });
+
+    it('should match null-store events for the default store handle', () => {
+      let captured: ((event: any) => void) | undefined;
+      mockModule.onPreferenceChange.mockImplementation((cb: any) => {
+        captured = cb;
+        return { remove: jest.fn() };
+      });
+      const listener = jest.fn();
+
+      createStore().addListener(listener);
+      captured?.({ key: 'k', store: null });
+
+      expect(listener).toHaveBeenCalledWith({ key: 'k', store: null });
     });
   });
 

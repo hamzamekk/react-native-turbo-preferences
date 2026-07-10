@@ -20,7 +20,7 @@ It's also a great fit whenever native code (SDKs, Settings.bundle, Android home-
 - 🪝 **React Hooks** — Convenient hooks for reactive state management
 - 📱 **Cross-Platform** — Same JS API for iOS + Android with native optimizations
 - 📦 **Lightweight** — Wraps native APIs (NSUserDefaults, SharedPreferences) directly, no custom storage format
-- 🗂 **Namespace Support** — Switch between the default store and any named suite/file
+- 🗂 **Multiple Stores** — Hold handles to the default store, named files, and App Groups side by side
 - 🛠 **Batch Operations** — Set/get/remove multiple keys at once for efficiency
 - 🧹 **Full Control** — Get all keys, clear store, check existence
 - 🔒 **Type Safe** — Written in TypeScript with full type definitions
@@ -83,16 +83,19 @@ Works with development builds and EAS. To share data with widgets/extensions, ad
 ### Imperative API
 
 ```typescript
-import Prefs from 'react-native-turbo-preferences';
+import Prefs, { createStore } from 'react-native-turbo-preferences';
 
-// Basic usage
+// Basic usage (default store)
 await Prefs.set('username', 'Hamza');
 const username = await Prefs.get('username');
 console.log(username); // "Hamza"
 
-// Use a named store
-await Prefs.setName('MyPrefs');
-await Prefs.set('theme', 'dark');
+// Named stores are handles — use as many as you need, at the same time
+const settings = createStore('settings');
+const appGroup = createStore('group.com.yourcompany.yourapp');
+
+await settings.set('theme', 'dark');
+await appGroup.setInt('streak', 42); // visible to your widget
 ```
 
 ### React Hooks API
@@ -150,13 +153,16 @@ The plugin merges with any existing App Groups, deduplicates, and accepts an arr
 ### 2. Write from React Native
 
 ```typescript
-import Prefs, { setInt, setBoolean } from 'react-native-turbo-preferences';
+import { createStore } from 'react-native-turbo-preferences';
 
-await Prefs.setName('group.com.yourcompany.yourapp'); // switch to the App Group container
-await setInt('streak', 42); // stored as a real integer
-await setBoolean('goalReached', true); // stored as a real boolean
-await Prefs.set('lastWorkout', 'Push day'); // strings via set()
+const appGroup = createStore('group.com.yourcompany.yourapp');
+
+await appGroup.setInt('streak', 42); // stored as a real integer
+await appGroup.setBoolean('goalReached', true); // stored as a real boolean
+await appGroup.set('lastWorkout', 'Push day'); // strings via set()
 ```
+
+The handle only touches the App Group container — the rest of your app keeps using the default store (or other handles) at the same time.
 
 ### 3. Read from your widget (Swift)
 
@@ -203,23 +209,43 @@ Data stays inside your app's sandbox. (Unlike libraries that write a world-reada
 
 ## 📖 API Documentation
 
-### Basic Methods
+### Stores
 
-#### `setName(name?: string | null): Promise<void>`
+#### `createStore(name?: string): PreferenceStore`
 
-Switches the storage namespace.
+Creates a handle to a preference store. Handles are cheap JS objects — create as many as you need and use several stores **at the same time**, with no global state.
 
 **Parameters:**
 
-- `name` (string, optional) - Namespace name. Pass null/undefined to reset to default store.
+- `name` (string, optional) - iOS: `UserDefaults` suite (e.g. an App Group). Android: `SharedPreferences` file name. Omit for the default store.
 
-**Returns:** `Promise<void>`
+**Returns:** a `PreferenceStore` with the full API scoped to that store: `get`/`set`/`clear`/`contains`, typed values, batch ops, `getAll`/`clearAll`, and `addListener` (fires only for that store's changes).
 
 **Example:**
 
 ```typescript
-// iOS: uses UserDefaults(suiteName:)
-// Android: uses getSharedPreferences(name, MODE_PRIVATE)
+const settings = createStore('settings');
+const appGroup = createStore('group.com.yourcompany.yourapp');
+
+await settings.set('theme', 'dark');
+await appGroup.setInt('streak', 42);
+
+const sub = appGroup.addListener((event) => {
+  console.log('widget data changed:', event.key);
+});
+```
+
+### Basic Methods
+
+The top-level functions below operate on the **default store** (or the store selected with the deprecated `setName`).
+
+#### `setName(name?: string | null): Promise<void>` (deprecated)
+
+Switches the store the top-level functions point at. **Prefer `createStore()`** — `setName` is a global switch shared by every call in your app, which invites subtle bugs when two features use different namespaces.
+
+> Migration note: the selection now lives in JS and resets on app restart — this was always Android's behavior; iOS used to persist it across launches.
+
+```typescript
 await Prefs.setName('group.com.your.app');
 ```
 
@@ -811,17 +837,30 @@ class AppConfig {
 
 ## 🔧 Configuration
 
-### Namespace Management
+### Working with Multiple Stores
 
 ```typescript
-// Use default store
-await Prefs.setName('');
+import { createStore } from 'react-native-turbo-preferences';
 
-// Use app group (iOS) or named file (Android)
-await Prefs.setName('group.com.your.app');
+const defaults = createStore(); // default store
+const appGroup = createStore('group.com.your.app'); // iOS App Group
+const settings = createStore('UserSettings'); // named file
 
-// Use custom namespace
-await Prefs.setName('UserSettings');
+// All usable at the same time — no global switching
+await defaults.set('lastScreen', 'home');
+await appGroup.setInt('streak', 42);
+await settings.setBoolean('darkMode', true);
+```
+
+Hooks accept a store handle as their second argument:
+
+```typescript
+const appGroup = createStore('group.com.your.app');
+
+function StreakBadge() {
+  const [streak] = usePreferenceNumber('streak', appGroup);
+  return <Text>{streak ?? 0}</Text>;
+}
 ```
 
 ### Error Handling
@@ -841,7 +880,8 @@ try {
 
 | Method                | Description       | Parameters                    | Returns                                   |
 | --------------------- | ----------------- | ----------------------------- | ----------------------------------------- |
-| `setName(name)`       | Switch namespace  | `name: string \| null`        | `Promise<void>`                           |
+| `createStore(name?)`  | Create a store handle | `name?: string`           | `PreferenceStore`                         |
+| `setName(name)` ⚠️ deprecated | Switch global namespace | `name: string \| null` | `Promise<void>`                     |
 | `get(key)`            | Retrieve value    | `key: string`                 | `Promise<string \| null>`                 |
 | `set(key, value)`     | Store value       | `key: string, value: string`  | `Promise<void>`                           |
 | `clear(key)`          | Delete key        | `key: string`                 | `Promise<void>`                           |
@@ -1052,7 +1092,7 @@ yarn example       # Run example app
 - [x] ✅ Expo config plugin — auto-configure the App Group entitlement from `app.json`
 - [x] ✅ Typed values (bool/int/double) so native readers get real types, not strings
 - [x] ✅ Change listeners — react to writes from native code / sync hooks across components
-- [ ] 🔜 Handle-based stores — use multiple namespaces at once without global `setName`
+- [x] ✅ Handle-based stores — use multiple namespaces at once without global `setName`
 
 ## 🤝 Contributing
 
