@@ -12,6 +12,7 @@ jest.mock('../NativeTurboPreferences', () => ({
     getMultiple: jest.fn(),
     clearMultiple: jest.fn(),
     contains: jest.fn(),
+    reloadWidgets: jest.fn(),
   },
 }));
 
@@ -26,6 +27,7 @@ import {
   getMultiple,
   clearMultiple,
   contains,
+  reloadWidgets,
 } from '../index';
 
 // Get the mocked module
@@ -561,6 +563,32 @@ describe('React Native Turbo Preferences', () => {
 
       expect(duration).toBeLessThan(5000); // Should complete in under 5 seconds
       expect(mockModule.setName).toHaveBeenCalledTimes(100);
+    });
+  });
+
+  describe('reloadWidgets', () => {
+    it('should reload all widget timelines when no kind is passed', async () => {
+      mockModule.reloadWidgets.mockResolvedValue(undefined);
+
+      await reloadWidgets();
+
+      expect(mockModule.reloadWidgets).toHaveBeenCalledWith(null);
+    });
+
+    it('should reload a specific widget kind', async () => {
+      mockModule.reloadWidgets.mockResolvedValue(undefined);
+
+      await reloadWidgets('StreakWidget');
+
+      expect(mockModule.reloadWidgets).toHaveBeenCalledWith('StreakWidget');
+    });
+
+    it('should propagate native errors', async () => {
+      mockModule.reloadWidgets.mockRejectedValue(
+        new Error('E_WIDGETS_UNAVAILABLE')
+      );
+
+      await expect(reloadWidgets()).rejects.toThrow('E_WIDGETS_UNAVAILABLE');
     });
   });
 });

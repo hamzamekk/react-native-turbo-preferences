@@ -44,6 +44,10 @@ export function contains(key: string): Promise<boolean> {
   return TurboPreferences.contains(key);
 }
 
+export function reloadWidgets(kind?: string): Promise<void> {
+  return TurboPreferences.reloadWidgets(kind ?? null);
+}
+
 // Export hooks
 export * from './hooks';
 

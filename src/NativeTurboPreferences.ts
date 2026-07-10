@@ -24,6 +24,15 @@ export interface Spec extends TurboModule {
   // ----- Whole-store ops -----
   getAll(): Promise<{ [key: string]: string }>;
   clearAll(): Promise<void>;
+
+  // ----- Widgets -----
+  /**
+   * iOS: WidgetCenter.shared.reloadAllTimelines(), or
+   * reloadTimelines(ofKind:) when a kind is passed.
+   * Android: broadcasts ACTION_APPWIDGET_UPDATE to the app's widget
+   * providers (kind is ignored).
+   */
+  reloadWidgets(kind?: string | null): Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('TurboPreferences');

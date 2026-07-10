@@ -246,6 +246,28 @@ RCT_EXPORT_MODULE(TurboPreferences)
     }
 }
 
+- (void)reloadWidgets:(NSString *)kind
+              resolve:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject
+{
+    Class widgetsClass = NSClassFromString(@"TurboPreferencesWidgets");
+    if (!widgetsClass) {
+        reject(@"E_WIDGETS_UNAVAILABLE", @"WidgetKit helper class not found", nil);
+        return;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    if (kind && kind.length > 0) {
+        [widgetsClass performSelector:@selector(reloadTimelinesOfKind:) withObject:kind];
+    } else {
+        [widgetsClass performSelector:@selector(reloadAllTimelines)];
+    }
+#pragma clang diagnostic pop
+
+    resolve(nil);
+}
+
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const facebook::react::ObjCTurboModule::InitParams &)params
 {
     return std::make_shared<facebook::react::NativeTurboPreferencesSpecJSI>(params);

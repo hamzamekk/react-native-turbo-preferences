@@ -170,7 +170,21 @@ struct Provider: TimelineProvider {
 }
 ```
 
-> **Note:** all values are stored as strings — read them with `string(forKey:)` and parse as needed. iOS decides when widget timelines refresh; to force an immediate refresh after writing, call `WidgetCenter.shared.reloadAllTimelines()` from native code (a JS-callable `reloadWidgets()` is on the [roadmap](#-roadmap)).
+> **Note:** all values are stored as strings — read them with `string(forKey:)` and parse as needed.
+
+### 4. Refresh the widget
+
+iOS decides when widget timelines refresh on their own. To make the widget pick up your new values immediately, call `reloadWidgets()` after writing:
+
+```typescript
+import Prefs, { reloadWidgets } from 'react-native-turbo-preferences';
+
+await Prefs.set('streak', '43');
+await reloadWidgets(); // WidgetCenter.shared.reloadAllTimelines()
+await reloadWidgets('StreakWidget'); // …or only one kind: reloadTimelines(ofKind:)
+```
+
+On Android, `reloadWidgets()` broadcasts `ACTION_APPWIDGET_UPDATE` to all of your app's widget providers (the `kind` argument is iOS-only and ignored).
 
 ### Android: sharing with native code
 
@@ -358,6 +372,28 @@ Clears the current store.
 
 ```typescript
 await Prefs.clearAll(); // ⚠️ Use with caution!
+```
+
+### Widget Operations
+
+#### `reloadWidgets(kind?: string): Promise<void>`
+
+Asks the OS to refresh your home-screen widgets so they pick up newly written values.
+
+**Parameters:**
+
+- `kind` (string, optional) - iOS only: refresh a single widget kind (the `kind` you pass to your `WidgetConfiguration`). Omit to refresh all.
+
+**Platform behavior:**
+
+- **iOS:** `WidgetCenter.shared.reloadAllTimelines()`, or `reloadTimelines(ofKind:)` when `kind` is passed
+- **Android:** broadcasts `ACTION_APPWIDGET_UPDATE` to all of the app's widget providers (`kind` ignored)
+
+**Example:**
+
+```typescript
+await Prefs.set('streak', '43');
+await reloadWidgets();
 ```
 
 ## 🪝 React Hooks API
@@ -753,6 +789,7 @@ try {
 | `clearMultiple(keys)` | Delete multiple   | `keys: string[]`              | `Promise<void>`                           |
 | `getAll()`            | Get all keys      | None                          | `Promise<Record<string, string>>`         |
 | `clearAll()`          | Clear store       | None                          | `Promise<void>`                           |
+| `reloadWidgets(kind?)` | Refresh home-screen widgets | `kind?: string` (iOS only) | `Promise<void>`                    |
 
 ### React Hooks API
 
@@ -942,7 +979,7 @@ yarn example       # Run example app
 - [x] ✅ Performance monitoring & benchmarking (iOS + Android)
 - [x] ✅ Memory footprint analysis (iOS + Android)
 - [x] ✅ React hooks (usePreferenceString, usePreferenceNumber, usePreferenceBoolean, usePreferenceObject, usePreferenceNamespace)
-- [ ] 🔜 `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
+- [x] ✅ `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
 - [x] ✅ Expo config plugin — auto-configure the App Group entitlement from `app.json`
 - [ ] 🔜 Typed values (bool/int/double) so native readers get real types, not strings
 - [ ] 🔜 Change listeners — react to writes from native code / sync hooks across components
