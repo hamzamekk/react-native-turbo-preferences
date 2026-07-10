@@ -117,6 +117,117 @@ RCT_EXPORT_MODULE(TurboPreferences)
     resolve(@(contains));
 }
 
+- (void)setBoolean:(NSString *)key
+             value:(BOOL)value
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    [defaults setBool:value forKey:key];
+    resolve(nil);
+}
+
+- (void)getBoolean:(NSString *)key
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    id value = [defaults objectForKey:key];
+    if ([value isKindOfClass:[NSNumber class]]) {
+        resolve(@([value boolValue]));
+    } else {
+        resolve(nil);
+    }
+}
+
+- (void)setInt:(NSString *)key
+         value:(NSInteger)value
+       resolve:(RCTPromiseResolveBlock)resolve
+        reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    [defaults setInteger:value forKey:key];
+    resolve(nil);
+}
+
+- (void)getInt:(NSString *)key
+       resolve:(RCTPromiseResolveBlock)resolve
+        reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    id value = [defaults objectForKey:key];
+    if ([value isKindOfClass:[NSNumber class]]) {
+        resolve(@([value longLongValue]));
+    } else {
+        resolve(nil);
+    }
+}
+
+- (void)setDouble:(NSString *)key
+            value:(double)value
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    [defaults setDouble:value forKey:key];
+    resolve(nil);
+}
+
+- (void)getDouble:(NSString *)key
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject
+{
+    if (!key || key.length == 0) {
+        reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
+        return;
+    }
+
+    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
+    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
+
+    id value = [defaults objectForKey:key];
+    if ([value isKindOfClass:[NSNumber class]]) {
+        resolve(@([value doubleValue]));
+    } else {
+        resolve(nil);
+    }
+}
+
 - (void)setMultiple:(NSArray *)values
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(RCTPromiseRejectBlock)reject

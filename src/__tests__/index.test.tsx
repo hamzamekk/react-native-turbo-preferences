@@ -13,6 +13,12 @@ jest.mock('../NativeTurboPreferences', () => ({
     clearMultiple: jest.fn(),
     contains: jest.fn(),
     reloadWidgets: jest.fn(),
+    setBoolean: jest.fn(),
+    getBoolean: jest.fn(),
+    setInt: jest.fn(),
+    getInt: jest.fn(),
+    setDouble: jest.fn(),
+    getDouble: jest.fn(),
   },
 }));
 
@@ -28,6 +34,12 @@ import {
   clearMultiple,
   contains,
   reloadWidgets,
+  setBoolean,
+  getBoolean,
+  setInt,
+  getInt,
+  setDouble,
+  getDouble,
 } from '../index';
 
 // Get the mocked module
@@ -563,6 +575,78 @@ describe('React Native Turbo Preferences', () => {
 
       expect(duration).toBeLessThan(5000); // Should complete in under 5 seconds
       expect(mockModule.setName).toHaveBeenCalledTimes(100);
+    });
+  });
+
+  describe('typed values', () => {
+    it('should set and get a boolean', async () => {
+      mockModule.setBoolean.mockResolvedValue(undefined);
+      mockModule.getBoolean.mockResolvedValue(true);
+
+      await setBoolean('darkMode', true);
+      const value = await getBoolean('darkMode');
+
+      expect(mockModule.setBoolean).toHaveBeenCalledWith('darkMode', true);
+      expect(value).toBe(true);
+    });
+
+    it('should set and get an int', async () => {
+      mockModule.setInt.mockResolvedValue(undefined);
+      mockModule.getInt.mockResolvedValue(42);
+
+      await setInt('streak', 42);
+      const value = await getInt('streak');
+
+      expect(mockModule.setInt).toHaveBeenCalledWith('streak', 42);
+      expect(value).toBe(42);
+    });
+
+    it('should reject setInt with a non-integer', async () => {
+      await expect(setInt('streak', 3.5)).rejects.toThrow(
+        /expects a 32-bit integer/
+      );
+      expect(mockModule.setInt).not.toHaveBeenCalled();
+    });
+
+    it('should reject setInt outside the 32-bit range', async () => {
+      await expect(setInt('streak', 2147483648)).rejects.toThrow(
+        /expects a 32-bit integer/
+      );
+      await expect(setInt('streak', -2147483649)).rejects.toThrow(
+        /expects a 32-bit integer/
+      );
+      expect(mockModule.setInt).not.toHaveBeenCalled();
+    });
+
+    it('should accept setInt at the 32-bit boundaries', async () => {
+      mockModule.setInt.mockResolvedValue(undefined);
+
+      await setInt('max', 2147483647);
+      await setInt('min', -2147483648);
+
+      expect(mockModule.setInt).toHaveBeenCalledWith('max', 2147483647);
+      expect(mockModule.setInt).toHaveBeenCalledWith('min', -2147483648);
+    });
+
+    it('should set and get a double', async () => {
+      mockModule.setDouble.mockResolvedValue(undefined);
+      mockModule.getDouble.mockResolvedValue(3.14);
+
+      await setDouble('ratio', 3.14);
+      const value = await getDouble('ratio');
+
+      expect(mockModule.setDouble).toHaveBeenCalledWith('ratio', 3.14);
+      expect(value).toBe(3.14);
+    });
+
+    it('should resolve null for missing typed keys', async () => {
+      mockModule.getBoolean.mockResolvedValue(null);
+      mockModule.getInt.mockResolvedValue(null);
+      mockModule.getDouble.mockResolvedValue(null);
+
+      expect(await getBoolean('missing')).toBeNull();
+      expect(await getInt('missing')).toBeNull();
+      expect(await getDouble('missing')).toBeNull();
     });
   });
 

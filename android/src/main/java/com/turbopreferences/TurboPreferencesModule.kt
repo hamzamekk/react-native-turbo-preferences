@@ -57,6 +57,87 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  override fun setBoolean(key: String, value: Boolean, promise: Promise) {
+    try {
+      if (key == "") {
+        promise.reject("E_INVALID_KEY", "Key cannot be empty")
+        return
+      }
+      getPrefs().edit().putBoolean(key, value).apply()
+      promise.resolve(null)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error setting boolean $key: ${e.message}")
+      promise.reject("E_SET_BOOLEAN_FAILED", e.message, e)
+    }
+  }
+
+  override fun getBoolean(key: String, promise: Promise) {
+    try {
+      val value = getPrefs().all[key]
+      promise.resolve(value as? Boolean)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error getting boolean $key: ${e.message}")
+      promise.reject("E_GET_BOOLEAN_FAILED", e.message, e)
+    }
+  }
+
+  override fun setInt(key: String, value: Double, promise: Promise) {
+    try {
+      if (key == "") {
+        promise.reject("E_INVALID_KEY", "Key cannot be empty")
+        return
+      }
+      getPrefs().edit().putInt(key, value.toInt()).apply()
+      promise.resolve(null)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error setting int $key: ${e.message}")
+      promise.reject("E_SET_INT_FAILED", e.message, e)
+    }
+  }
+
+  override fun getInt(key: String, promise: Promise) {
+    try {
+      val value = getPrefs().all[key]
+      if (value is Number) {
+        promise.resolve(value.toInt())
+      } else {
+        promise.resolve(null)
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error getting int $key: ${e.message}")
+      promise.reject("E_GET_INT_FAILED", e.message, e)
+    }
+  }
+
+  override fun setDouble(key: String, value: Double, promise: Promise) {
+    try {
+      if (key == "") {
+        promise.reject("E_INVALID_KEY", "Key cannot be empty")
+        return
+      }
+      // SharedPreferences has no putDouble — stored as Float
+      getPrefs().edit().putFloat(key, value.toFloat()).apply()
+      promise.resolve(null)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error setting double $key: ${e.message}")
+      promise.reject("E_SET_DOUBLE_FAILED", e.message, e)
+    }
+  }
+
+  override fun getDouble(key: String, promise: Promise) {
+    try {
+      val value = getPrefs().all[key]
+      if (value is Number) {
+        promise.resolve(value.toDouble())
+      } else {
+        promise.resolve(null)
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error getting double $key: ${e.message}")
+      promise.reject("E_GET_DOUBLE_FAILED", e.message, e)
+    }
+  }
+
   override fun setMultiple(values: ReadableArray, promise: Promise) {
     try {
       val prefs = getPrefs()

@@ -150,27 +150,29 @@ The plugin merges with any existing App Groups, deduplicates, and accepts an arr
 ### 2. Write from React Native
 
 ```typescript
-import Prefs from 'react-native-turbo-preferences';
+import Prefs, { setInt, setBoolean } from 'react-native-turbo-preferences';
 
 await Prefs.setName('group.com.yourcompany.yourapp'); // switch to the App Group container
-await Prefs.set('streak', '42');
-await Prefs.set('lastWorkout', 'Push day');
+await setInt('streak', 42); // stored as a real integer
+await setBoolean('goalReached', true); // stored as a real boolean
+await Prefs.set('lastWorkout', 'Push day'); // strings via set()
 ```
 
 ### 3. Read from your widget (Swift)
+
+Because values are stored as real native types, your widget reads them with the normal typed `UserDefaults` accessors — no string parsing:
 
 ```swift
 struct Provider: TimelineProvider {
   func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
     let defaults = UserDefaults(suiteName: "group.com.yourcompany.yourapp")
-    let streak = defaults?.string(forKey: "streak") ?? "0"
+    let streak = defaults?.integer(forKey: "streak") ?? 0
+    let goalReached = defaults?.bool(forKey: "goalReached") ?? false
     let workout = defaults?.string(forKey: "lastWorkout") ?? "—"
     // build your timeline entry from these values …
   }
 }
 ```
-
-> **Note:** all values are stored as strings — read them with `string(forKey:)` and parse as needed.
 
 ### 4. Refresh the widget
 
@@ -192,7 +194,9 @@ On Android, `setName('my_file')` maps to `getSharedPreferences("my_file", MODE_P
 
 ```kotlin
 val prefs = context.getSharedPreferences("my_file", Context.MODE_PRIVATE)
-val streak = prefs.getString("streak", "0")
+val streak = prefs.getInt("streak", 0)
+val goalReached = prefs.getBoolean("goalReached", false)
+val workout = prefs.getString("lastWorkout", null)
 ```
 
 Data stays inside your app's sandbox. (Unlike libraries that write a world-readable JSON file to external storage, other apps can't read, edit, or delete it — and no storage permissions are required.)
@@ -290,6 +294,40 @@ if (hasTheme) {
   console.log('Theme is configured');
 }
 ```
+
+### Typed Values
+
+Booleans and numbers are stored as **real native types** (not strings), so native readers — widgets, watch apps, SDKs — use their normal typed accessors: `integer(forKey:)` / `bool(forKey:)` on iOS, `getInt` / `getBoolean` on Android.
+
+#### `setBoolean(key: string, value: boolean)` / `getBoolean(key: string)`
+
+```typescript
+await setBoolean('darkMode', true);
+const darkMode = await getBoolean('darkMode'); // true, or null if missing
+```
+
+- iOS: `setBool(_:forKey:)` — Android: `putBoolean`
+
+#### `setInt(key: string, value: number)` / `getInt(key: string)`
+
+```typescript
+await setInt('streak', 42);
+const streak = await getInt('streak'); // 42, or null if missing
+```
+
+- Value must be a 32-bit integer (−2,147,483,648 … 2,147,483,647); `setInt` rejects otherwise
+- iOS: `set(Int, forKey:)` — Android: `putInt`
+
+#### `setDouble(key: string, value: number)` / `getDouble(key: string)`
+
+```typescript
+await setDouble('progress', 0.75);
+const progress = await getDouble('progress'); // 0.75, or null if missing
+```
+
+- iOS: `set(Double, forKey:)` — Android: `putFloat` (SharedPreferences has no `putDouble`, so values round-trip with Float precision on Android)
+
+> Typed getters resolve `null` when the key is missing or holds an incompatible type (e.g. a string). Use `get()`/`set()` for strings, and `usePreferenceObject` / JSON for objects.
 
 ### Batch Operations
 
@@ -784,6 +822,12 @@ try {
 | `set(key, value)`     | Store value       | `key: string, value: string`  | `Promise<void>`                           |
 | `clear(key)`          | Delete key        | `key: string`                 | `Promise<void>`                           |
 | `contains(key)`       | Check existence   | `key: string`                 | `Promise<boolean>`                        |
+| `setBoolean(key, value)` | Store native boolean | `key: string, value: boolean` | `Promise<void>`                     |
+| `getBoolean(key)`     | Retrieve boolean  | `key: string`                 | `Promise<boolean \| null>`                |
+| `setInt(key, value)`  | Store native int32 | `key: string, value: number` | `Promise<void>`                           |
+| `getInt(key)`         | Retrieve integer  | `key: string`                 | `Promise<number \| null>`                 |
+| `setDouble(key, value)` | Store native double/float | `key: string, value: number` | `Promise<void>`                  |
+| `getDouble(key)`      | Retrieve double   | `key: string`                 | `Promise<number \| null>`                 |
 | `setMultiple(values)` | Store multiple    | `values: Array<{key, value}>` | `Promise<void>`                           |
 | `getMultiple(keys)`   | Retrieve multiple | `keys: string[]`              | `Promise<Record<string, string \| null>>` |
 | `clearMultiple(keys)` | Delete multiple   | `keys: string[]`              | `Promise<void>`                           |
@@ -981,7 +1025,7 @@ yarn example       # Run example app
 - [x] ✅ React hooks (usePreferenceString, usePreferenceNumber, usePreferenceBoolean, usePreferenceObject, usePreferenceNamespace)
 - [x] ✅ `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
 - [x] ✅ Expo config plugin — auto-configure the App Group entitlement from `app.json`
-- [ ] 🔜 Typed values (bool/int/double) so native readers get real types, not strings
+- [x] ✅ Typed values (bool/int/double) so native readers get real types, not strings
 - [ ] 🔜 Change listeners — react to writes from native code / sync hooks across components
 - [ ] 🔜 Handle-based stores — use multiple namespaces at once without global `setName`
 
