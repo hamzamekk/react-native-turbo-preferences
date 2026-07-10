@@ -1,6 +1,6 @@
 # React Native Turbo Preferences
 
-[![npm version](https://badge.fury.io/js/react-native-turbo-preferences.svg)](https://badge.fury.io/js/react-native-turbo-preferences)
+[![npm version](https://img.shields.io/npm/v/react-native-turbo-preferences.svg)](https://www.npmjs.com/package/react-native-turbo-preferences)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/hamzamekk/react-native-turbo-preferences/workflows/CI/badge.svg)](https://github.com/hamzamekk/react-native-turbo-preferences/actions)
 [![React Native](https://img.shields.io/badge/React%20Native-New%20Architecture-blue.svg)](https://reactnative.dev/)
