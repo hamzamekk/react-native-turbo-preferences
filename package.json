@@ -1,7 +1,7 @@
 {
   "name": "react-native-turbo-preferences",
   "version": "1.0.1",
-  "description": "Modern TurboModule wrapper for iOS NSUserDefaults and Android SharedPreferences.",
+  "description": "Share preferences between your React Native app and iOS widgets, watch apps & app extensions. Modern TurboModule for NSUserDefaults (App Groups) and Android SharedPreferences.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -51,7 +51,21 @@
     "preferences",
     "sharedpreferences",
     "userdefaults",
-    "turbo-module"
+    "nsuserdefaults",
+    "turbo-module",
+    "new-architecture",
+    "app-group",
+    "app-groups",
+    "widget",
+    "widgetkit",
+    "ios-widget",
+    "app-extension",
+    "share-extension",
+    "watchos",
+    "suite",
+    "key-value",
+    "storage",
+    "expo"
   ],
   "repository": {
     "type": "git",
