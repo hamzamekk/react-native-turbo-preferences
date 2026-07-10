@@ -65,9 +65,10 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-turborepo-android-
+          # Key on everything the native build consumes — a yarn.lock-only key
+          # let stale turbo caches replay old builds for PRs that changed
+          # native code but not the lockfile.
+          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'package.json', 'android/**', 'src/**', 'example/package.json', 'example/android/**', 'example/src/**') }}
 
       - name: Check turborepo cache for Android
         run: |
@@ -122,9 +123,10 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-turborepo-ios-
+          # Key on everything the native build consumes — a yarn.lock-only key
+          # let stale turbo caches replay old builds for PRs that changed
+          # native code but not the lockfile.
+          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'package.json', '*.podspec', 'ios/**', 'src/**', 'example/package.json', 'example/ios/**', 'example/src/**') }}
 
       - name: Check turborepo cache for iOS
         run: |
