@@ -1,6 +1,6 @@
 {
   "name": "react-native-turbo-preferences",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Share preferences between your React Native app and iOS widgets, watch apps & app extensions. Modern TurboModule for NSUserDefaults (App Groups) and Android SharedPreferences.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
