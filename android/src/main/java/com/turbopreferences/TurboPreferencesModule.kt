@@ -26,13 +26,47 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
 
   private var prefs_name = "default"
 
+  // The system holds listeners weakly — keep a strong reference here
+  private val changeListener =
+    SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+      val event = Arguments.createMap()
+      if (key != null) {
+        event.putString("key", key)
+      } else {
+        // key is null when the store was cleared as a whole (API 30+)
+        event.putNull("key")
+      }
+      emitOnPreferenceChange(event)
+    }
+  private var listenedPrefs: SharedPreferences? = null
+
   private fun getPrefs(): SharedPreferences {
     return context.getSharedPreferences(prefs_name, Context.MODE_PRIVATE)
+  }
+
+  private fun attachChangeListener() {
+    val prefs = getPrefs()
+    if (prefs === listenedPrefs) return
+    listenedPrefs?.unregisterOnSharedPreferenceChangeListener(changeListener)
+    prefs.registerOnSharedPreferenceChangeListener(changeListener)
+    listenedPrefs = prefs
+  }
+
+  override fun initialize() {
+    super.initialize()
+    attachChangeListener()
+  }
+
+  override fun invalidate() {
+    listenedPrefs?.unregisterOnSharedPreferenceChangeListener(changeListener)
+    listenedPrefs = null
+    super.invalidate()
   }
 
   override fun setName(name: String?, promise: Promise) {
     try {
       prefs_name = if (name.isNullOrEmpty()) "default" else name
+      attachChangeListener()
       promise.resolve(null)
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error setting name: ${e.message}")

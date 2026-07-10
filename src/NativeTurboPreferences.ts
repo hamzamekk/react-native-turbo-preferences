@@ -1,6 +1,17 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
-import type { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
+import type {
+  EventEmitter,
+  Int32,
+} from 'react-native/Libraries/Types/CodegenTypes';
+
+export type PreferenceChangeEvent = {
+  /**
+   * The key that changed. Null when the whole store changed at once
+   * (e.g. clearAll) — re-read anything you care about.
+   */
+  key?: string | null;
+};
 
 export interface Spec extends TurboModule {
   // ----- Namespace / file selection -----
@@ -42,6 +53,16 @@ export interface Spec extends TurboModule {
   // ----- Whole-store ops -----
   getAll(): Promise<{ [key: string]: string }>;
   clearAll(): Promise<void>;
+
+  // ----- Change events -----
+  /**
+   * Fires when a value in the current store changes — including writes
+   * made by native code (widgets, SDKs), not just through this module.
+   * iOS: NSUserDefaultsDidChangeNotification (in-process changes) diffed
+   * against a snapshot of the store.
+   * Android: SharedPreferences.OnSharedPreferenceChangeListener.
+   */
+  readonly onPreferenceChange: EventEmitter<PreferenceChangeEvent>;
 
   // ----- Widgets -----
   /**

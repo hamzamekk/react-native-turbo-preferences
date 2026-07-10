@@ -19,6 +19,7 @@ jest.mock('../NativeTurboPreferences', () => ({
     getInt: jest.fn(),
     setDouble: jest.fn(),
     getDouble: jest.fn(),
+    onPreferenceChange: jest.fn(() => ({ remove: jest.fn() })),
   },
 }));
 
@@ -40,6 +41,7 @@ import {
   getInt,
   setDouble,
   getDouble,
+  addPreferenceChangeListener,
 } from '../index';
 
 // Get the mocked module
@@ -647,6 +649,33 @@ describe('React Native Turbo Preferences', () => {
       expect(await getBoolean('missing')).toBeNull();
       expect(await getInt('missing')).toBeNull();
       expect(await getDouble('missing')).toBeNull();
+    });
+  });
+
+  describe('addPreferenceChangeListener', () => {
+    it('should subscribe through the native event emitter', () => {
+      const listener = jest.fn();
+
+      const subscription = addPreferenceChangeListener(listener);
+
+      expect(mockModule.onPreferenceChange).toHaveBeenCalledWith(listener);
+      expect(typeof subscription.remove).toBe('function');
+    });
+
+    it('should deliver change events to the listener', () => {
+      let captured: ((event: { key?: string | null }) => void) | undefined;
+      mockModule.onPreferenceChange.mockImplementation(
+        (cb: (event: { key?: string | null }) => void) => {
+          captured = cb;
+          return { remove: jest.fn() };
+        }
+      );
+      const listener = jest.fn();
+
+      addPreferenceChangeListener(listener);
+      captured?.({ key: 'theme' });
+
+      expect(listener).toHaveBeenCalledWith({ key: 'theme' });
     });
   });
 

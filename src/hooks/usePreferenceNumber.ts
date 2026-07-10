@@ -63,16 +63,19 @@ export function usePreferenceNumber(
     }
   }, [key]);
 
-  // Load initial value on mount and key change
+  // Load on mount/key change, and reload when the store changes —
+  // including writes from other components or native code
   useEffect(() => {
     if (!key) return;
+    let active = true;
 
-    const loadInitialValue = async () => {
+    const load = async () => {
       try {
         const [currentValue, exists] = await Promise.all([
           TurboPreferences.get(key),
           TurboPreferences.contains(key),
         ]);
+        if (!active) return;
 
         if (currentValue !== null) {
           const numValue = Number(currentValue);
@@ -87,7 +90,15 @@ export function usePreferenceNumber(
       }
     };
 
-    loadInitialValue();
+    load();
+    const subscription = TurboPreferences.onPreferenceChange((event) => {
+      if (event.key == null || event.key === key) load();
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
   }, [key]);
 
   return [value, setPreferenceValue, contains, clearPreferenceValue];

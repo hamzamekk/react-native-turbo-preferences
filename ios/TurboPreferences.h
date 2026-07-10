@@ -1,5 +1,5 @@
 #import <TurboPreferencesSpec/TurboPreferencesSpec.h>
 
-@interface TurboPreferences : NSObject <NativeTurboPreferencesSpec>
+@interface TurboPreferences : NativeTurboPreferencesSpecBase <NativeTurboPreferencesSpec>
 
 @end

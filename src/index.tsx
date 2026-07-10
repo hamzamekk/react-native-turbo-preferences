@@ -1,4 +1,19 @@
+import type { EventSubscription } from 'react-native';
 import TurboPreferences from './NativeTurboPreferences';
+import type { PreferenceChangeEvent } from './NativeTurboPreferences';
+
+export type { PreferenceChangeEvent };
+
+/**
+ * Subscribe to changes in the current store — fires for writes made
+ * through this module and by native code (widgets, SDKs).
+ * `event.key` is null when the whole store changed at once.
+ */
+export function addPreferenceChangeListener(
+  listener: (event: PreferenceChangeEvent) => void
+): EventSubscription {
+  return TurboPreferences.onPreferenceChange(listener);
+}
 
 export function setName(name: string | null): Promise<void> {
   return TurboPreferences.setName(name);
