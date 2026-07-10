@@ -5,6 +5,11 @@ import type { PreferenceChangeEvent } from './NativeTurboPreferences';
 const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
 
+/** Native resolve(nil) can surface as undefined — honor the declared `T | null`. */
+export function nullify<T>(value: T | null | undefined): T | null {
+  return value ?? null;
+}
+
 export function validateInt(value: number): Promise<void> | null {
   if (!Number.isInteger(value) || value < INT32_MIN || value > INT32_MAX) {
     return Promise.reject(
@@ -72,20 +77,22 @@ export function createStore(name?: string | null): PreferenceStore {
   return {
     name: storeName,
 
-    get: (key) => TurboPreferences.get(storeName, key),
+    get: (key) => TurboPreferences.get(storeName, key).then(nullify),
     set: (key, value) => TurboPreferences.set(storeName, key, value),
     clear: (key) => TurboPreferences.clear(storeName, key),
     contains: (key) => TurboPreferences.contains(storeName, key),
 
     setBoolean: (key, value) =>
       TurboPreferences.setBoolean(storeName, key, value),
-    getBoolean: (key) => TurboPreferences.getBoolean(storeName, key),
+    getBoolean: (key) =>
+      TurboPreferences.getBoolean(storeName, key).then(nullify),
     setInt: (key, value) =>
       validateInt(value) ?? TurboPreferences.setInt(storeName, key, value),
-    getInt: (key) => TurboPreferences.getInt(storeName, key),
+    getInt: (key) => TurboPreferences.getInt(storeName, key).then(nullify),
     setDouble: (key, value) =>
       TurboPreferences.setDouble(storeName, key, value),
-    getDouble: (key) => TurboPreferences.getDouble(storeName, key),
+    getDouble: (key) =>
+      TurboPreferences.getDouble(storeName, key).then(nullify),
 
     setMultiple: (values) => TurboPreferences.setMultiple(storeName, values),
     getMultiple: (keys) => TurboPreferences.getMultiple(storeName, keys),
