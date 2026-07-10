@@ -15,6 +15,7 @@ It's also a great fit whenever native code (SDKs, Settings.bundle, Android home-
 ## 🌟 Features
 
 - 📲 **App Group Sharing** — Write from JS, read from your iOS widget, watch app, or extension
+- 🔌 **Expo Config Plugin** — Auto-configures the App Group entitlement on prebuild, no Xcode needed
 - 🚀 **New Architecture Native** — A true TurboModule, not an old bridge module running through interop
 - 🪝 **React Hooks** — Convenient hooks for reactive state management
 - 📱 **Cross-Platform** — Same JS API for iOS + Android with native optimizations
@@ -34,7 +35,7 @@ The two libraries most apps use for App Group / native preference sharing haven'
 | New Architecture      | ✅ Native TurboModule                   | ⚠️ Old bridge (via interop layer)                | ⚠️ Old bridge (via interop layer)             |
 | iOS App Groups        | ✅ `UserDefaults(suiteName:)`           | ✅                                               | ✅                                            |
 | Android backend       | ✅ `SharedPreferences` (app-sandboxed)  | ⚠️ Public external-storage JSON file, needs storage permissions, readable by other apps | ✅ `SharedPreferences` |
-| Expo                  | ✅ Dev builds / EAS ([guide below](#-sharing-data-with-an-ios-widget-app-groups)) | ❌ "Doesn't work for Expo" (their README)        | ⚠️ Undocumented                               |
+| Expo                  | ✅ Config plugin ([guide below](#-sharing-data-with-an-ios-widget-app-groups)) | ❌ "Doesn't work for Expo" (their README)        | ⚠️ Undocumented                               |
 | React hooks           | ✅                                      | ❌                                               | ❌                                            |
 | Batch operations      | ✅                                      | ❌                                               | ✅                                            |
 | TypeScript            | ✅ Written in TS                        | ❌                                               | ⚠️ Type definitions only                      |
@@ -62,7 +63,20 @@ npx pod-install
 ```
 
 **For Expo:**
-This package works with EAS builds.
+Works with development builds and EAS. To share data with widgets/extensions, add the [config plugin](#-sharing-data-with-an-ios-widget-app-groups) to `app.json`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-turbo-preferences",
+        { "appGroup": "group.com.yourcompany.yourapp" }
+      ]
+    ]
+  }
+}
+```
 
 ## 🚀 Quick Start
 
@@ -114,19 +128,22 @@ This is the flagship use case: your React Native app writes a value, and your Wi
 
 **Bare React Native:** in Xcode, select your app target → _Signing & Capabilities_ → _+ Capability_ → **App Groups** → add a group like `group.com.yourcompany.yourapp`. Repeat for your widget/extension target with the **same** group id.
 
-**Expo:** add the entitlement in `app.json` — no config plugin needed, `expo prebuild` / EAS Build picks it up:
+**Expo:** use the built-in config plugin — it adds the App Group entitlement to your app target during `expo prebuild` / EAS Build:
 
 ```json
 {
   "expo": {
-    "ios": {
-      "entitlements": {
-        "com.apple.security.application-groups": ["group.com.yourcompany.yourapp"]
-      }
-    }
+    "plugins": [
+      [
+        "react-native-turbo-preferences",
+        { "appGroup": "group.com.yourcompany.yourapp" }
+      ]
+    ]
   }
 }
 ```
+
+The plugin merges with any existing App Groups, deduplicates, and accepts an array (`"appGroup": ["group.a", "group.b"]`) if you share more than one. Prefer configuring it manually? Setting `ios.entitlements["com.apple.security.application-groups"]` in `app.json` works too.
 
 > To create the widget extension target itself in an Expo project, use a target plugin such as [`@bacons/apple-targets`](https://github.com/EvanBacon/expo-apple-targets), and give the widget target the same App Group entitlement.
 
@@ -926,7 +943,7 @@ yarn example       # Run example app
 - [x] ✅ Memory footprint analysis (iOS + Android)
 - [x] ✅ React hooks (usePreferenceString, usePreferenceNumber, usePreferenceBoolean, usePreferenceObject, usePreferenceNamespace)
 - [ ] 🔜 `reloadWidgets()` — trigger `WidgetCenter.shared.reloadAllTimelines()` from JS after writing
-- [ ] 🔜 Expo config plugin — auto-configure the App Group entitlement from `app.json`
+- [x] ✅ Expo config plugin — auto-configure the App Group entitlement from `app.json`
 - [ ] 🔜 Typed values (bool/int/double) so native readers get real types, not strings
 - [ ] 🔜 Change listeners — react to writes from native code / sync hooks across components
 - [ ] 🔜 Handle-based stores — use multiple namespaces at once without global `setName`
