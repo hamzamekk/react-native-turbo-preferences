@@ -1,8 +1,12 @@
 import { useState, useCallback } from 'react';
-import TurboPreferences from '../NativeTurboPreferences';
+import { getCurrentName, setCurrentName } from '../currentStore';
 
 /**
- * React hook for managing preference namespaces
+ * React hook for managing the global preference namespace.
+ *
+ * @deprecated Prefer `createStore(name)` — hold one handle per store
+ * instead of switching a global. This hook drives the same global
+ * "current store" as the deprecated `setName()`.
  *
  * @returns [currentNamespace, setNamespace, resetToDefault]
  *
@@ -28,27 +32,18 @@ export function usePreferenceNamespace(): [
   (namespace: string) => Promise<void>,
   () => Promise<void>,
 ] {
-  const [currentNamespace, setCurrentNamespace] = useState<string>('');
+  const [currentNamespace, setCurrentNamespace] = useState<string>(
+    () => getCurrentName() ?? ''
+  );
 
   const setNamespace = useCallback(async (namespace: string) => {
-    try {
-      await TurboPreferences.setName(namespace);
-      setCurrentNamespace(namespace);
-    } catch (error) {
-      console.warn('usePreferenceNamespace setNamespace error:', error);
-      throw error;
-    }
+    setCurrentName(namespace);
+    setCurrentNamespace(namespace);
   }, []);
 
   const resetToDefault = useCallback(async () => {
-    try {
-      // Pass null to go back to default namespace
-      await TurboPreferences.setName(null);
-      setCurrentNamespace('');
-    } catch (error) {
-      console.warn('usePreferenceNamespace resetToDefault error:', error);
-      throw error;
-    }
+    setCurrentName(null);
+    setCurrentNamespace('');
   }, []);
 
   return [currentNamespace, setNamespace, resetToDefault];

@@ -2,18 +2,71 @@
 #import <React/RCTLog.h>
 
 @implementation TurboPreferences {
-  NSDictionary *_snapshot;
+  NSMutableDictionary<NSString *, NSUserDefaults *> *_defaultsCache;
+  // Per-store snapshots for change detection, keyed by store token
+  // (@"" for the default store)
+  NSMutableDictionary<NSString *, NSDictionary *> *_snapshots;
   BOOL _observing;
-  BOOL _suppressChangeEvents;
 }
 
 RCT_EXPORT_MODULE(TurboPreferences)
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+        _defaultsCache = [NSMutableDictionary dictionary];
+        _snapshots = [NSMutableDictionary dictionary];
+    }
+    return self;
+}
 
 - (void)dealloc
 {
     if (_observing) {
         [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
+}
+
+#pragma mark - Store access
+
+- (NSString *)tokenForName:(NSString *)name
+{
+    return (name && name.length > 0) ? name : @"";
+}
+
+- (NSString *)domainForToken:(NSString *)token
+{
+    return token.length > 0 ? token : [[NSBundle mainBundle] bundleIdentifier];
+}
+
+- (NSUserDefaults *)defaultsForName:(NSString *)name
+{
+    NSString *token = [self tokenForName:name];
+
+    @synchronized (self) {
+        NSUserDefaults *defaults = _defaultsCache[token];
+        if (!defaults) {
+            defaults = token.length > 0
+                ? [[NSUserDefaults alloc] initWithSuiteName:token]
+                : [NSUserDefaults standardUserDefaults];
+            _defaultsCache[token] = defaults;
+            // Start change-watching this store from its current state
+            if (_observing && !_snapshots[token]) {
+                _snapshots[token] = [self snapshotForToken:token] ?: @{};
+            }
+        }
+        return defaults;
+    }
+}
+
+#pragma mark - Change events
+
+- (NSDictionary *)snapshotForToken:(NSString *)token
+{
+    NSUserDefaults *defaults = _defaultsCache[token]
+        ?: (token.length > 0 ? [[NSUserDefaults alloc] initWithSuiteName:token]
+                             : [NSUserDefaults standardUserDefaults]);
+    return [defaults persistentDomainForName:[self domainForToken:token]] ?: @{};
 }
 
 // The generated emit helpers call into a std::function that is only wired up
@@ -23,7 +76,11 @@ RCT_EXPORT_MODULE(TurboPreferences)
     [super setEventEmitterCallback:eventEmitterCallbackWrapper];
     if (!_observing) {
         _observing = YES;
-        _snapshot = [self currentDomainSnapshot];
+        @synchronized (self) {
+            for (NSString *token in _defaultsCache) {
+                _snapshots[token] = [self snapshotForToken:token] ?: @{};
+            }
+        }
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(userDefaultsDidChange:)
                                                      name:NSUserDefaultsDidChangeNotification
@@ -31,84 +88,34 @@ RCT_EXPORT_MODULE(TurboPreferences)
     }
 }
 
-// Snapshot of the current store's persistent domain — unlike
-// dictionaryRepresentation, this excludes NSGlobalDomain noise.
-- (NSDictionary *)currentDomainSnapshot
-{
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    NSString *domain = (suiteName && suiteName.length > 0)
-        ? suiteName
-        : [[NSBundle mainBundle] bundleIdentifier];
-    return [defaults persistentDomainForName:domain] ?: @{};
-}
-
 - (void)userDefaultsDidChange:(NSNotification *)notification
 {
     @synchronized (self) {
-        NSDictionary *newSnapshot = [self currentDomainSnapshot];
-        NSDictionary *oldSnapshot = _snapshot ?: @{};
-        _snapshot = newSnapshot;
+        for (NSString *token in _snapshots.allKeys) {
+            NSDictionary *oldSnapshot = _snapshots[token] ?: @{};
+            NSDictionary *newSnapshot = [self snapshotForToken:token];
+            _snapshots[token] = newSnapshot;
 
-        if (_suppressChangeEvents) {
-            return;
-        }
+            NSMutableSet *keys = [NSMutableSet setWithArray:oldSnapshot.allKeys];
+            [keys addObjectsFromArray:newSnapshot.allKeys];
 
-        NSMutableSet *keys = [NSMutableSet setWithArray:oldSnapshot.allKeys];
-        [keys addObjectsFromArray:newSnapshot.allKeys];
-
-        for (NSString *key in keys) {
-            if ([key hasPrefix:@"__turbo_preferences_"]) {
-                continue;
+            id storeValue = token.length > 0 ? token : [NSNull null];
+            for (NSString *key in keys) {
+                id oldValue = oldSnapshot[key];
+                id newValue = newSnapshot[key];
+                if (oldValue == newValue || [oldValue isEqual:newValue]) {
+                    continue;
+                }
+                [self emitOnPreferenceChange:@{ @"key": key, @"store": storeValue }];
             }
-            id oldValue = oldSnapshot[key];
-            id newValue = newSnapshot[key];
-            if (oldValue == newValue || [oldValue isEqual:newValue]) {
-                continue;
-            }
-            [self emitOnPreferenceChange:@{ @"key": key }];
         }
     }
 }
 
-- (NSUserDefaults *)userDefaults {
-    static NSUserDefaults *defaults = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        defaults = [NSUserDefaults standardUserDefaults];
-    });
-    return defaults;
-}
+#pragma mark - Single key ops
 
-- (NSUserDefaults *)userDefaultsWithSuite:(NSString *)suiteName {
-    if (suiteName && suiteName.length > 0) {
-        return [[NSUserDefaults alloc] initWithSuiteName:suiteName];
-    }
-    return [self userDefaults];
-}
-
-- (void)setName:(NSString *)name
-        resolve:(RCTPromiseResolveBlock)resolve
-         reject:(RCTPromiseRejectBlock)reject
-{
-    // This method is mainly for Android compatibility
-    // On iOS, we'll store the suite name in a special key for reference
-    @synchronized (self) {
-        // Switching stores is not a value change — swap the snapshot silently
-        _suppressChangeEvents = YES;
-        if (name && name.length > 0) {
-            [[self userDefaults] setObject:name forKey:@"__turbo_preferences_suite_name__"];
-        } else {
-            [[self userDefaults] removeObjectForKey:@"__turbo_preferences_suite_name__"];
-        }
-        [[self userDefaults] synchronize];
-        _snapshot = [self currentDomainSnapshot];
-        _suppressChangeEvents = NO;
-    }
-    resolve(@(YES));
-}
-
-- (void)get:(NSString *)key
+- (void)get:(NSString *)name
+        key:(NSString *)key
     resolve:(RCTPromiseResolveBlock)resolve
      reject:(RCTPromiseRejectBlock)reject
 {
@@ -116,15 +123,13 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
-    NSString *value = [defaults stringForKey:key];
+
+    NSString *value = [[self defaultsForName:name] stringForKey:key];
     resolve(value);
 }
 
-- (void)set:(NSString *)key
+- (void)set:(NSString *)name
+        key:(NSString *)key
       value:(NSString *)value
     resolve:(RCTPromiseResolveBlock)resolve
      reject:(RCTPromiseRejectBlock)reject
@@ -133,25 +138,18 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
+
+    NSUserDefaults *defaults = [self defaultsForName:name];
     if (value) {
         [defaults setObject:value forKey:key];
     } else {
         [defaults removeObjectForKey:key];
     }
-    
-    BOOL success = [defaults synchronize];
-    if (success) {
-        resolve(@(YES));
-    } else {
-        reject(@"SYNC_FAILED", @"Failed to synchronize UserDefaults", nil);
-    }
+    resolve(nil);
 }
 
-- (void)clear:(NSString *)key
+- (void)clear:(NSString *)name
+          key:(NSString *)key
       resolve:(RCTPromiseResolveBlock)resolve
        reject:(RCTPromiseRejectBlock)reject
 {
@@ -159,21 +157,13 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
-    [defaults removeObjectForKey:key];
-    BOOL success = [defaults synchronize];
-    
-    if (success) {
-        resolve(@(YES));
-    } else {
-        reject(@"SYNC_FAILED", @"Failed to synchronize UserDefaults", nil);
-    }
+
+    [[self defaultsForName:name] removeObjectForKey:key];
+    resolve(nil);
 }
 
-- (void)contains:(NSString *)key
+- (void)contains:(NSString *)name
+             key:(NSString *)key
          resolve:(RCTPromiseResolveBlock)resolve
           reject:(RCTPromiseRejectBlock)reject
 {
@@ -181,15 +171,15 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEY", @"Key cannot be null or empty", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
-    BOOL contains = [defaults objectForKey:key] != nil;
+
+    BOOL contains = [[self defaultsForName:name] objectForKey:key] != nil;
     resolve(@(contains));
 }
 
-- (void)setBoolean:(NSString *)key
+#pragma mark - Typed ops
+
+- (void)setBoolean:(NSString *)name
+               key:(NSString *)key
              value:(BOOL)value
            resolve:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
@@ -199,14 +189,12 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    [defaults setBool:value forKey:key];
+    [[self defaultsForName:name] setBool:value forKey:key];
     resolve(nil);
 }
 
-- (void)getBoolean:(NSString *)key
+- (void)getBoolean:(NSString *)name
+               key:(NSString *)key
            resolve:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
 {
@@ -215,10 +203,7 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    id value = [defaults objectForKey:key];
+    id value = [[self defaultsForName:name] objectForKey:key];
     if ([value isKindOfClass:[NSNumber class]]) {
         resolve(@([value boolValue]));
     } else {
@@ -226,7 +211,8 @@ RCT_EXPORT_MODULE(TurboPreferences)
     }
 }
 
-- (void)setInt:(NSString *)key
+- (void)setInt:(NSString *)name
+           key:(NSString *)key
          value:(NSInteger)value
        resolve:(RCTPromiseResolveBlock)resolve
         reject:(RCTPromiseRejectBlock)reject
@@ -236,14 +222,12 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    [defaults setInteger:value forKey:key];
+    [[self defaultsForName:name] setInteger:value forKey:key];
     resolve(nil);
 }
 
-- (void)getInt:(NSString *)key
+- (void)getInt:(NSString *)name
+           key:(NSString *)key
        resolve:(RCTPromiseResolveBlock)resolve
         reject:(RCTPromiseRejectBlock)reject
 {
@@ -252,10 +236,7 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    id value = [defaults objectForKey:key];
+    id value = [[self defaultsForName:name] objectForKey:key];
     if ([value isKindOfClass:[NSNumber class]]) {
         resolve(@([value longLongValue]));
     } else {
@@ -263,7 +244,8 @@ RCT_EXPORT_MODULE(TurboPreferences)
     }
 }
 
-- (void)setDouble:(NSString *)key
+- (void)setDouble:(NSString *)name
+              key:(NSString *)key
             value:(double)value
           resolve:(RCTPromiseResolveBlock)resolve
            reject:(RCTPromiseRejectBlock)reject
@@ -273,14 +255,12 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    [defaults setDouble:value forKey:key];
+    [[self defaultsForName:name] setDouble:value forKey:key];
     resolve(nil);
 }
 
-- (void)getDouble:(NSString *)key
+- (void)getDouble:(NSString *)name
+              key:(NSString *)key
           resolve:(RCTPromiseResolveBlock)resolve
            reject:(RCTPromiseRejectBlock)reject
 {
@@ -289,10 +269,7 @@ RCT_EXPORT_MODULE(TurboPreferences)
         return;
     }
 
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-
-    id value = [defaults objectForKey:key];
+    id value = [[self defaultsForName:name] objectForKey:key];
     if ([value isKindOfClass:[NSNumber class]]) {
         resolve(@([value doubleValue]));
     } else {
@@ -300,7 +277,10 @@ RCT_EXPORT_MODULE(TurboPreferences)
     }
 }
 
-- (void)setMultiple:(NSArray *)values
+#pragma mark - Batch ops
+
+- (void)setMultiple:(NSString *)name
+             values:(NSArray *)values
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(RCTPromiseRejectBlock)reject
 {
@@ -308,15 +288,13 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_VALUES", @"Values must be an array", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
+
+    NSUserDefaults *defaults = [self defaultsForName:name];
     for (NSDictionary *item in values) {
         if ([item isKindOfClass:[NSDictionary class]]) {
             NSString *key = item[@"key"];
             NSString *value = item[@"value"];
-            
+
             if (key && [key isKindOfClass:[NSString class]]) {
                 if (value && [value isKindOfClass:[NSString class]]) {
                     [defaults setObject:value forKey:key];
@@ -326,16 +304,11 @@ RCT_EXPORT_MODULE(TurboPreferences)
             }
         }
     }
-    
-    BOOL success = [defaults synchronize];
-    if (success) {
-        resolve(@(YES));
-    } else {
-        reject(@"SYNC_FAILED", @"Failed to synchronize UserDefaults", nil);
-    }
+    resolve(nil);
 }
 
-- (void)getMultiple:(NSArray *)keys
+- (void)getMultiple:(NSString *)name
+               keys:(NSArray *)keys
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(RCTPromiseRejectBlock)reject
 {
@@ -343,23 +316,22 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEYS", @"Keys must be an array", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
+
+    NSUserDefaults *defaults = [self defaultsForName:name];
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
-    
+
     for (NSString *key in keys) {
         if ([key isKindOfClass:[NSString class]]) {
             NSString *value = [defaults stringForKey:key];
             result[key] = value ?: [NSNull null];
         }
     }
-    
+
     resolve(result);
 }
 
-- (void)clearMultiple:(NSArray *)keys
+- (void)clearMultiple:(NSString *)name
+                 keys:(NSArray *)keys
               resolve:(RCTPromiseResolveBlock)resolve
                reject:(RCTPromiseRejectBlock)reject
 {
@@ -367,67 +339,51 @@ RCT_EXPORT_MODULE(TurboPreferences)
         reject(@"INVALID_KEYS", @"Keys must be an array", nil);
         return;
     }
-    
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
+
+    NSUserDefaults *defaults = [self defaultsForName:name];
     for (NSString *key in keys) {
         if ([key isKindOfClass:[NSString class]]) {
             [defaults removeObjectForKey:key];
         }
     }
-    
-    BOOL success = [defaults synchronize];
-    if (success) {
-        resolve(@(YES));
-    } else {
-        reject(@"SYNC_FAILED", @"Failed to synchronize UserDefaults", nil);
-    }
+    resolve(nil);
 }
 
-- (void)getAll:(RCTPromiseResolveBlock)resolve
+#pragma mark - Whole-store ops
+
+- (void)getAll:(NSString *)name
+       resolve:(RCTPromiseResolveBlock)resolve
         reject:(RCTPromiseRejectBlock)reject
 {
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
-    NSDictionary *allValues = [defaults dictionaryRepresentation];
+    // The store's persistent domain only — unlike dictionaryRepresentation,
+    // this excludes NSGlobalDomain (AppleLanguages and friends)
+    [self defaultsForName:name]; // ensure the store is cached/watched
+    NSDictionary *allValues = [self snapshotForToken:[self tokenForName:name]];
     NSMutableDictionary *stringValues = [NSMutableDictionary dictionary];
-    
+
     for (NSString *key in allValues) {
         id value = allValues[key];
         if ([value isKindOfClass:[NSString class]]) {
-            // Skip our internal keys
-            if (![key hasPrefix:@"__turbo_preferences_"]) {
-                stringValues[key] = value;
-            }
+            stringValues[key] = value;
+        } else if ([value isKindOfClass:[NSNumber class]]) {
+            // Typed values come back stringified, matching Android's getAll
+            stringValues[key] = [value stringValue];
         }
     }
-    
+
     resolve(stringValues);
 }
 
-- (void)clearAll:(RCTPromiseResolveBlock)resolve
+- (void)clearAll:(NSString *)name
+         resolve:(RCTPromiseResolveBlock)resolve
           reject:(RCTPromiseRejectBlock)reject
 {
-    NSString *suiteName = [[self userDefaults] objectForKey:@"__turbo_preferences_suite_name__"];
-    NSUserDefaults *defaults = [self userDefaultsWithSuite:suiteName];
-    
-    // Get all keys and remove them (except our internal ones)
-    NSDictionary *allValues = [defaults dictionaryRepresentation];
-    for (NSString *key in allValues) {
-        if (![key hasPrefix:@"__turbo_preferences_"]) {
-            [defaults removeObjectForKey:key];
-        }
-    }
-    
-    BOOL success = [defaults synchronize];
-    if (success) {
-        resolve(@(YES));
-    } else {
-        reject(@"SYNC_FAILED", @"Failed to synchronize UserDefaults", nil);
-    }
+    NSUserDefaults *defaults = [self defaultsForName:name];
+    [defaults removePersistentDomainForName:[self domainForToken:[self tokenForName:name]]];
+    resolve(nil);
 }
+
+#pragma mark - Widgets
 
 - (void)reloadWidgets:(NSString *)kind
               resolve:(RCTPromiseResolveBlock)resolve

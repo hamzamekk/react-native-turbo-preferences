@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import TurboPreferences from '../NativeTurboPreferences';
+import { getCurrentName } from '../currentStore';
+import type { PreferenceStore } from '../store';
 
 /**
  * React hook for managing an object preference with JSON serialization
  *
  * @param key - The preference key
+ * @param store - Optional store handle from createStore(); defaults to
+ * the store selected by the global API
  * @returns [value, setValue, contains, clear]
  *
  * @example
@@ -32,19 +36,22 @@ import TurboPreferences from '../NativeTurboPreferences';
  * ```
  */
 export function usePreferenceObject<T>(
-  key: string
+  key: string,
+  store?: PreferenceStore
 ): [T | null, (value: T) => Promise<void>, boolean, () => Promise<void>] {
   const [value, setValue] = useState<T | null>(null);
   const [contains, setContains] = useState<boolean>(false);
+  const storeName = store ? store.name : undefined;
 
   const setPreferenceValue = useCallback(
     async (newValue: T) => {
       if (!key) return;
 
       try {
+        const name = storeName !== undefined ? storeName : getCurrentName();
         // Convert object to JSON string for storage
         const jsonString = JSON.stringify(newValue);
-        await TurboPreferences.set(key, jsonString);
+        await TurboPreferences.set(name, key, jsonString);
         setValue(newValue);
         setContains(true);
       } catch (error) {
@@ -52,21 +59,22 @@ export function usePreferenceObject<T>(
         throw error;
       }
     },
-    [key]
+    [key, storeName]
   );
 
   const clearPreferenceValue = useCallback(async () => {
     if (!key) return;
 
     try {
-      await TurboPreferences.clear(key);
+      const name = storeName !== undefined ? storeName : getCurrentName();
+      await TurboPreferences.clear(name, key);
       setValue(null);
       setContains(false);
     } catch (error) {
       console.warn('usePreferenceObject clear error:', error);
       throw error;
     }
-  }, [key]);
+  }, [key, storeName]);
 
   // Load on mount/key change, and reload when the store changes —
   // including writes from other components or native code
@@ -74,11 +82,15 @@ export function usePreferenceObject<T>(
     if (!key) return;
     let active = true;
 
+    const resolveName = () =>
+      storeName !== undefined ? storeName : getCurrentName();
+
     const load = async () => {
       try {
+        const name = resolveName();
         const [currentValue, exists] = await Promise.all([
-          TurboPreferences.get(key),
-          TurboPreferences.contains(key),
+          TurboPreferences.get(name, key),
+          TurboPreferences.contains(name, key),
         ]);
         if (!active) return;
 
@@ -102,6 +114,7 @@ export function usePreferenceObject<T>(
 
     load();
     const subscription = TurboPreferences.onPreferenceChange((event) => {
+      if ((event.store ?? null) !== resolveName()) return;
       if (event.key == null || event.key === key) load();
     });
 
@@ -109,7 +122,7 @@ export function usePreferenceObject<T>(
       active = false;
       subscription.remove();
     };
-  }, [key]);
+  }, [key, storeName]);
 
   return [value, setPreferenceValue, contains, clearPreferenceValue];
 }
