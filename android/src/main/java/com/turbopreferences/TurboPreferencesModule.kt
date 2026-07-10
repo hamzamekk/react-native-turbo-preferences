@@ -1,6 +1,8 @@
 package com.turbopreferences
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReadableMap
@@ -177,6 +179,31 @@ class TurboPreferencesModule(reactContext: ReactApplicationContext) :
     } catch (e: Exception) {
       android.util.Log.e("TurboPreferences", "Error checking if key contains: ${e.message}")
       promise.reject("E_CONTAINS_FAILED", e.message, e)
+    }
+  }
+
+  override fun reloadWidgets(kind: String?, promise: Promise) {
+    try {
+      // `kind` is a WidgetKit (iOS) concept; on Android all of the app's
+      // widget providers are refreshed.
+      val manager = AppWidgetManager.getInstance(context)
+      val providers = manager.installedProviders
+        .filter { it.provider.packageName == context.packageName }
+
+      for (info in providers) {
+        val ids = manager.getAppWidgetIds(info.provider)
+        if (ids.isEmpty()) continue
+
+        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+          component = info.provider
+          putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        }
+        context.sendBroadcast(intent)
+      }
+      promise.resolve(null)
+    } catch (e: Exception) {
+      android.util.Log.e("TurboPreferences", "Error reloading widgets: ${e.message}")
+      promise.reject("E_RELOAD_WIDGETS_FAILED", e.message, e)
     }
   }
 

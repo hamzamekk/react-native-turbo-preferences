@@ -25,6 +25,7 @@ Pod::Spec.new do |s|
   s.private_header_files = "ios/**/*.h"
 
   s.swift_version = '5.0'
+  s.weak_frameworks = "WidgetKit"
 
 
   install_modules_dependencies(s)
