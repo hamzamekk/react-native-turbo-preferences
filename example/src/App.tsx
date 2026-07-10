@@ -3,7 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text, StyleSheet } from 'react-native';
 
-import NormalScreen from './screens/NormalScreen';
+import StoresScreen from './screens/StoresScreen';
+import TypedScreen from './screens/TypedScreen';
 import HooksScreen from './screens/HooksScreen';
 import BenchmarksScreen from './screens/BenchmarksScreen';
 
@@ -35,27 +36,31 @@ export default function App() {
           }}
         >
           <Tab.Screen
-            name="Normal"
-            component={NormalScreen}
+            name="Stores"
+            component={StoresScreen}
             options={{
-              title: 'Normal API',
-              tabBarIcon: ({ color }) => <TabIcon color={color}>⚙️</TabIcon>,
+              tabBarIcon: ({ color }) => <TabIcon color={color}>🗂</TabIcon>,
+            }}
+          />
+          <Tab.Screen
+            name="Typed"
+            component={TypedScreen}
+            options={{
+              tabBarIcon: ({ color }) => <TabIcon color={color}>🔢</TabIcon>,
             }}
           />
           <Tab.Screen
             name="Hooks"
             component={HooksScreen}
             options={{
-              title: 'React Hooks',
               tabBarIcon: ({ color }) => <TabIcon color={color}>🪝</TabIcon>,
             }}
           />
           <Tab.Screen
-            name="Benchmarks"
+            name="Bench"
             component={BenchmarksScreen}
             options={{
-              title: 'Benchmarks',
-              tabBarIcon: ({ color }) => <TabIcon color={color}>📊</TabIcon>,
+              tabBarIcon: ({ color }) => <TabIcon color={color}>⚡️</TabIcon>,
             }}
           />
         </Tab.Navigator>
@@ -66,6 +71,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
   tabIcon: {
-    fontSize: 20,
+    fontSize: 18,
   },
 });

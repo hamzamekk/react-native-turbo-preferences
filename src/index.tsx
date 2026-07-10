@@ -2,7 +2,7 @@ import type { EventSubscription } from 'react-native';
 import TurboPreferences from './NativeTurboPreferences';
 import type { PreferenceChangeEvent } from './NativeTurboPreferences';
 import { getCurrentName, setCurrentName } from './currentStore';
-import { createStore, validateInt } from './store';
+import { createStore, nullify, validateInt } from './store';
 import type { PreferenceStore } from './store';
 
 export type { PreferenceChangeEvent, PreferenceStore };
@@ -46,7 +46,7 @@ export function setName(name: string | null): Promise<void> {
 }
 
 export function get(key: string): Promise<string | null> {
-  return TurboPreferences.get(getCurrentName(), key);
+  return TurboPreferences.get(getCurrentName(), key).then(nullify);
 }
 
 export function getAll(): Promise<{ [key: string]: string } | null> {
@@ -90,7 +90,7 @@ export function setBoolean(key: string, value: boolean): Promise<void> {
 }
 
 export function getBoolean(key: string): Promise<boolean | null> {
-  return TurboPreferences.getBoolean(getCurrentName(), key);
+  return TurboPreferences.getBoolean(getCurrentName(), key).then(nullify);
 }
 
 export function setInt(key: string, value: number): Promise<void> {
@@ -100,7 +100,7 @@ export function setInt(key: string, value: number): Promise<void> {
 }
 
 export function getInt(key: string): Promise<number | null> {
-  return TurboPreferences.getInt(getCurrentName(), key);
+  return TurboPreferences.getInt(getCurrentName(), key).then(nullify);
 }
 
 export function setDouble(key: string, value: number): Promise<void> {
@@ -108,7 +108,7 @@ export function setDouble(key: string, value: number): Promise<void> {
 }
 
 export function getDouble(key: string): Promise<number | null> {
-  return TurboPreferences.getDouble(getCurrentName(), key);
+  return TurboPreferences.getDouble(getCurrentName(), key).then(nullify);
 }
 
 // Export hooks
