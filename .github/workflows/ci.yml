@@ -107,9 +107,12 @@ jobs:
           yarn turbo run build:android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
 
   build-ios:
-    runs-on: macos-latest
+    # macos-15: last image with Xcode 16.x — RN 0.79's folly/fmt doesn't
+    # compile under Xcode 26's clang. Move back to macos-latest after
+    # upgrading the example to RN 0.84+.
+    runs-on: macos-15
     env:
-      XCODE_VERSION: latest-stable
+      XCODE_VERSION: '16.4'
       TURBO_CACHE_DIR: .turbo/ios
     steps:
       - name: Checkout
